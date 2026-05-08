@@ -1251,19 +1251,21 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
         {ticker ? (
           /* ── Ticker mode: all on one line ── */
           <>
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Price</span>
-              <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
-                {price}
-              </span>
-            </div>
-
-            <div className="shrink-0 mr-6">
-              <DeltaMetricSm
-                label={timeFrame}
-                value={barPeriodDisplay !== null ? `${Math.abs(barPeriodDisplay).toFixed(1)}%` : '—'}
-                positive={barPeriodDisplay !== null ? barPeriodDisplay >= 0 : true}
-              />
+            {/* Fixed-width left cluster so hover price / % updates don’t shift Mkt Cap / PE / Debt */}
+            <div className="flex items-end gap-4 shrink-0 mr-12">
+              <div className="flex flex-col gap-0.5 shrink-0 min-w-[9rem]">
+                <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Price</span>
+                <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
+                  {price}
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5 shrink-0 min-w-[6rem]">
+                <DeltaMetricSm
+                  label={timeFrame}
+                  value={barPeriodDisplay !== null ? `${Math.abs(barPeriodDisplay).toFixed(1)}%` : '—'}
+                  positive={barPeriodDisplay !== null ? barPeriodDisplay >= 0 : true}
+                />
+              </div>
             </div>
 
             <div className="flex flex-col gap-0.5 shrink-0">
