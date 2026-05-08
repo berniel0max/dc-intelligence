@@ -975,15 +975,15 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
   // of stale prices after the user switches timeframes (effect runs after paint).
   const historyMatchesTf = Boolean(liveHistory && liveHistory.tf === timeFrame);
   const useLiveChart     = Boolean(activeTicker && historyMatchesTf && !histLoading);
-  const chartId    = ticker ? `ticker-${ticker.symbol}` : sector.id;
-  const chartValue = ticker ? ticker.marketCapValue     : health.currentMarketCapValue;
+  const chartId      = ticker ? `ticker-${ticker.symbol}` : sector.id;
+  const chartValue   = ticker ? ticker.price : health.currentMarketCapValue;
   const chartVals  = useLiveChart && liveHistory
     ? liveHistory.values
     : generateChartData(chartId, chartValue, timeFrame);
   const chartLbls  = useLiveChart && liveHistory
     ? liveHistory.labels
     : getXAxisLabels(timeFrame, chartVals.length);
-  const chartYFmt  = useLiveChart ? fmtPrice : undefined;  // undefined → default $B formatter
+  const chartYFmt  = ticker ? fmtPrice : undefined; // ticker → share price; sector → $B market cap
 
   // Chart-implied change (first→last bar) — used when FMP has no field (1W, All)
   const chartPeriodReturn = useMemo(() => {
