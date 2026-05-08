@@ -1,0 +1,208 @@
+{
+  "sectors": [
+    {
+      "id": "base_materials",
+      "name": "Base Materials & Gas Suppliers",
+      "description": "High-purity gases, silicon wafers, and copper for cooling/power.",
+      "tickers": [
+        { "symbol": "LIN",   "desc": "Global leader in industrial gases; provides ultra-high purity nitrogen and argon essential for chip fabrication." },
+        { "symbol": "APD",   "desc": "Specializes in electronic gases and hydrogen; a key partner for on-site gas supply at mega-foundries." },
+        { "symbol": "ENTG",  "desc": "Provides high-performance chemicals and filtration systems that ensure zero-defect chip manufacturing." },
+        { "symbol": "FCX",   "desc": "Major copper producer; supplies the raw material for data center power cabling and liquid cooling cold plates." },
+        { "symbol": "SHECY", "desc": "The world's largest producer of silicon wafers; the foundational substrate for all AI semiconductors." },
+        { "symbol": "SCCO",  "desc": "The #2 global copper miner; copper is the critical material for data center power cabling and liquid-cooling cold plates." },
+        { "symbol": "NUE",   "desc": "Largest US steel producer; structural steel underpins every hyperscale data center build-out." },
+        { "symbol": "GTLS",  "desc": "Engineers and manufactures cryogenic and industrial gas storage and delivery equipment used at chip fabs." },
+        { "symbol": "MKSI",  "desc": "Provides gas control, power delivery, and plasma systems — the plumbing inside every semiconductor fab." },
+        { "symbol": "MP",    "desc": "Only US-based rare-earth magnet producer; permanent magnets are critical for data center cooling fans and motors." },
+        { "symbol": "VMC",   "desc": "#1 US crushed-stone and aggregate producer; every hyperscale campus requires millions of tons of concrete, and Vulcan supplies the aggregate." },
+        { "symbol": "MLM",   "desc": "#2 US aggregates and cement supplier; directly exposed to the industrial construction boom driven by data center site development." },
+        { "symbol": "TECK",  "desc": "Major copper and zinc miner; copper demand is spiking from DC power infrastructure and liquid-cooling plumbing." },
+        { "symbol": "EMN",   "desc": "Produces specialty polymers and adhesive films used in advanced chip packaging encapsulants." },
+        { "symbol": "ALB",   "desc": "Largest global lithium producer; lithium-ion UPS systems are the critical backup power layer inside every tier-3 and tier-4 data center." }
+      ]
+    },
+    {
+      "id": "specialty_energy",
+      "name": "Specialty Energy & Equipment",
+      "description": "Power and cooling infrastructure; the 2026 growth bottleneck.",
+      "tickers": [
+        { "symbol": "GEV",  "desc": "Provides grid-scale gas turbines and grid stabilization; the primary power provider for new data center hubs." },
+        { "symbol": "VRT",  "desc": "Global leader in thermal management; provides the liquid cooling systems required for high-density AI clusters." },
+        { "symbol": "BE",   "desc": "Provides on-site fuel cell power; allows data centers to bypass long grid interconnection queues." },
+        { "symbol": "CCJ",  "desc": "Largest uranium miner; the 'fuel' play for the resurgence of nuclear-powered data centers." },
+        { "symbol": "VICR", "desc": "Designs high-density power conversion chips; enables the precise voltage regulation required by dense GPU clusters." },
+        { "symbol": "MOD",  "desc": "Designs and manufactures thermal management systems for data centers; growing adoption in liquid-cooled AI facilities." },
+        { "symbol": "NVT",  "desc": "Provides electrical enclosures and busway infrastructure; its products are specified into every hyperscale build." },
+        { "symbol": "ETN",  "desc": "Provides electrical switchgear and transformers; the literal hardware that connects a data center to the power grid." },
+        { "symbol": "CEG",  "desc": "Largest US nuclear operator; has signed direct power agreements with Microsoft and Amazon for dedicated data center capacity." },
+        { "symbol": "VST",  "desc": "Owns nuclear and natural gas generation; rapidly expanding long-term capacity contracts with hyperscalers." },
+        { "symbol": "CARR", "desc": "Global leader in commercial HVAC and cooling; data centers are its fastest-growing end market." },
+        { "symbol": "EMR",  "desc": "Industrial automation and process controls; acquired National Instruments — a key provider of power-management test systems." },
+        { "symbol": "PWR",  "desc": "Builds high-voltage electrical grid connections and substations that hyperscalers need to power new campuses." },
+        { "symbol": "NEE",  "desc": "World's largest renewable energy company; the primary developer of utility-scale solar and wind power purchase agreements for hyperscalers." },
+        { "symbol": "SO",   "desc": "Largest US utility with operating nuclear plants; runs the most AI-contracted utility grid in the US across the Southeast." },
+        { "symbol": "D",    "desc": "The utility serving Virginia's Data Center Alley — the highest concentration of hyperscale capacity in the world." },
+        { "symbol": "IR",   "desc": "Industrial compressed-air systems and precision cooling; its chiller and compression technology underpins mechanical cooling for large data centers." },
+        { "symbol": "JCI",  "desc": "Provides building management systems and HVAC for hyperscale campuses; its OpenBlue AI platform optimizes data center energy use in real time." }
+      ]
+    },
+    {
+      "id": "fabless",
+      "name": "Fabless Chip Designers",
+      "description": "AI architects designing accelerators and high-speed fabrics.",
+      "tickers": [
+        { "symbol": "NVDA", "desc": "The undisputed king of AI hardware; designs the H100 and B200 GPUs that power the generative AI revolution." },
+        { "symbol": "AMD",  "desc": "The primary challenger to NVIDIA; providing high-performance CPUs and GPUs for the open AI ecosystem." },
+        { "symbol": "AVGO", "desc": "Dominates AI networking and custom ASICs; the primary provider of the fabric that connects GPU clusters." },
+        { "symbol": "QCOM", "desc": "Designs mobile and data center AI silicon; its custom AI chips and NPUs target the edge computing market." },
+        { "symbol": "MRVL", "desc": "Provides custom AI silicon (XPUs) and optical interconnects; a key enabler of hyperscale AI networking." },
+        { "symbol": "NXPI", "desc": "Designs edge AI and automotive silicon; its secure processors are used in smart-building systems that manage data center access and HVAC." },
+        { "symbol": "MPWR", "desc": "Designs high-efficiency power-management ICs that regulate voltage inside every AI server rack — a direct GPU enabler." },
+        { "symbol": "MCHP", "desc": "Provides microcontrollers and FPGAs used in data center BMC, power sequencing, and fan control." },
+        { "symbol": "ON",   "desc": "Fabless power semiconductor leader; its silicon-carbide and IGBT devices manage power delivery efficiency in data center PDUs." },
+        { "symbol": "ALAB", "desc": "Pure-play AI connectivity — makes the PCIe and CXL retimer chips that link GPU clusters to memory and storage at hyperscale." },
+        { "symbol": "COHR", "desc": "Designs and manufactures optical transceivers and photonic ICs that carry data between GPU nodes in 400G and 800G AI networking fabrics." },
+        { "symbol": "CRDO", "desc": "Pure-play AI networking IC company; its SerDes and optical DSP chips are the signal-integrity layer inside 800G and 1.6T hyperscale switches." },
+        { "symbol": "LSCC", "desc": "Low-power FPGA designer; its chips power server baseboard management controllers and real-time inference at the edge." },
+        { "symbol": "SITM", "desc": "Precision MEMS timing semiconductor company; every AI server requires ultra-stable clock references — SiTime is replacing quartz across hyperscale platforms." },
+        { "symbol": "POWI", "desc": "Designs high-efficiency power conversion ICs for power supplies; widely used in the AC-DC and DC-DC conversion stages inside AI server PSUs." },
+        { "symbol": "POET", "desc": "Fabless designer of an optical interposer platform that co-packages lasers and electronics on a single chip; enables the next generation of energy-efficient 800G/1.6T transceivers." }
+      ]
+    },
+    {
+      "id": "eda",
+      "name": "Electronic Design Automation",
+      "description": "Software and IP used to architect complex 2nm circuitry.",
+      "tickers": [
+        { "symbol": "SNPS",   "desc": "The dominant software provider for chip design; essential for architecting complex 2nm AI processors." },
+        { "symbol": "CDNS",   "desc": "Provides critical IP and design software; a primary gatekeeper for NVIDIA and AMD chip development." },
+        { "symbol": "ANSS",   "desc": "Specializes in simulation software; used to model heat and structural integrity in high-density server racks." },
+        { "symbol": "ARM",    "desc": "The dominant chip architecture licensor; virtually every AI accelerator and mobile processor uses ARM IP." },
+        { "symbol": "KEYS",   "desc": "Makes the electronic design simulation and signal-integrity test tools used to validate AI chip interconnects before tape-out." },
+        { "symbol": "RAMBUS", "desc": "Licenses memory interface IP (LPDDR, HBM) and security IP embedded in virtually every AI accelerator." },
+        { "symbol": "MACOM",  "desc": "Provides analog and RF semiconductor components and IP for data center optical interconnects." },
+        { "symbol": "ONTO",   "desc": "Metrology and inspection systems for advanced packaging — ensures yield in the HBM and chiplet assemblies used in AI accelerators." },
+        { "symbol": "FORM",   "desc": "Makes probe cards used to test every advanced AI chip at wafer level; demand scales directly with NVDA and AMD tape-out volumes." },
+        { "symbol": "PTC",    "desc": "Product lifecycle management and industrial simulation; tools used to design and validate the physical infrastructure of AI server hardware." },
+        { "symbol": "AZPN",   "desc": "Process optimization software for industrial plants; used by chemical and gas suppliers feeding semiconductor fabs to maximize yield." },
+        { "symbol": "SLAB",   "desc": "Fabless IoT and wireless connectivity IC designer; its chips enable the sensor networks monitoring temperature, power, and airflow in smart data centers." },
+        { "symbol": "AMBA",   "desc": "AI vision SoC designer; its CV-series chips power the security cameras and physical intrusion detection systems across hyperscale campuses." },
+        { "symbol": "VECO",   "desc": "MOCVD and ion-beam deposition equipment used to grow compound semiconductor layers required for GaN and SiC power devices." },
+        { "symbol": "LWLG",   "desc": "Develops electro-optic polymer platform technology for ultra-fast optical modulators; its IP enables co-packaged optics at densities and power levels silicon photonics cannot match." }
+      ]
+    },
+    {
+      "id": "wafer_equip",
+      "name": "Wafer Fab / Packaging Equipment",
+      "description": "Precision machinery required for lithography and advanced packaging.",
+      "tickers": [
+        { "symbol": "ASML", "desc": "Sole provider of EUV lithography machines; the only company capable of printing the world's most advanced AI chips." },
+        { "symbol": "LRCX", "desc": "Leader in etch and deposition equipment; critical for the 3D-stacking of HBM (High Bandwidth Memory)." },
+        { "symbol": "AMAT", "desc": "The most diversified equipment maker; provides the machinery for nearly every step of the chip-making process." },
+        { "symbol": "KLAC", "desc": "Dominates the process control market; ensures high yields by detecting microscopic defects during fabrication." },
+        { "symbol": "TER",  "desc": "Provides automated test equipment for semiconductors; the quality gatekeeper before AI chips are packaged and shipped." },
+        { "symbol": "AMKR", "desc": "Largest US-based OSAT; packages and tests a majority of AI chips after they leave TSMC — demand directly coupled to NVDA shipment volumes." },
+        { "symbol": "ONTO", "desc": "Advanced-packaging inspection and metrology; critical for HBM stacking yield used in H100 and B200 GPUs." },
+        { "symbol": "ACLS", "desc": "Ion implantation equipment — an essential fab process step for every logic and power device node." },
+        { "symbol": "FORM", "desc": "Probe cards for wafer-level electrical testing; uniquely exposed to the high AI chip test volume ramp." },
+        { "symbol": "COHU", "desc": "Semiconductor test handlers and thermal management systems; scales with AI chip unit volume." },
+        { "symbol": "IPGP", "desc": "High-power fiber lasers used for laser annealing, dicing, and cutting of advanced semiconductor wafers and substrates." },
+        { "symbol": "BRKS", "desc": "Automated wafer storage, transport, and handling systems; manages the physical flow of wafers through complex fab lines." },
+        { "symbol": "UCTT", "desc": "Manufactures precision gas delivery assemblies and frame modules built into AMAT, LRCX, and other equipment — a critical OEM supplier." },
+        { "symbol": "KLIC", "desc": "Dominant wire bonding and advanced packaging equipment supplier; its tools connect die to substrate in packages inside every AI accelerator." },
+        { "symbol": "AEIS", "desc": "Precision power conversion and control systems built into semiconductor etch and deposition equipment — enabling uniformity required for 3nm nodes." }
+      ]
+    },
+    {
+      "id": "fabs",
+      "name": "Chip Fabs & Contract Manufacturers",
+      "description": "Global foundries where advanced silicon nodes are printed.",
+      "tickers": [
+        { "symbol": "TSM",   "desc": "The world's foundry; manufactures over 90% of the world's most advanced AI accelerators for NVIDIA and Apple." },
+        { "symbol": "INTC",  "desc": "An integrated manufacturer pivoting to a foundry model; a key beneficiary of US-based 'CHIPS Act' funding." },
+        { "symbol": "SSNLF", "desc": "The world's second-largest foundry and dominant DRAM/NAND maker; an integrated silicon giant essential to AI infrastructure." },
+        { "symbol": "GFS",   "desc": "Specializes in high-reliability chips for power management and automotive, essential for data center peripherals." },
+        { "symbol": "UMC",   "desc": "World's second-largest pure-play foundry; manufactures mature-node chips (power management, analog) essential to every AI server." },
+        { "symbol": "ASX",   "desc": "Largest global OSAT; performs advanced packaging for AI chips — indispensable assembly partner to TSMC." },
+        { "symbol": "AMKR",  "desc": "Major OSAT with advanced packaging capacity; key back-end partner for AMD, NVIDIA, and Apple." },
+        { "symbol": "TSEM",  "desc": "Specialty analog foundry producing power, RF, and CMOS image sensor chips inside every AI server rack." },
+        { "symbol": "WOLF",  "desc": "The leading SiC substrate and device fab; silicon-carbide power devices are becoming the standard for data center power conversion." },
+        { "symbol": "ICHR",  "desc": "Designs and manufactures gas and chemical delivery subsystems installed inside semiconductor fab tools — a critical enabler of advanced-node process chemistry." },
+        { "symbol": "PLAB",  "desc": "Manufactures photomasks — the glass reticles used by every fab to pattern circuits; demand scales directly with new chip tape-out activity." },
+        { "symbol": "IMOS",  "desc": "OSAT specializing in DRAM and display driver assembly and testing; tightly coupled to HBM and memory production cycles." },
+        { "symbol": "AEIS",  "desc": "Precision RF and DC power conversion built into fab chambers; a de facto standard component inside every AMAT, LRCX, and TEL tool." },
+        { "symbol": "UCTT",  "desc": "Supplies precision gas delivery modules and weldment assemblies to fabs and equipment makers; revenue moves in lockstep with wafer starts." }
+      ]
+    },
+    {
+      "id": "idms",
+      "name": "Integrated Device Manufacturers",
+      "description": "Vertical giants that both design and manufacture their own silicon.",
+      "tickers": [
+        { "symbol": "INTC", "desc": "An integrated manufacturer pivoting to a foundry model; a key beneficiary of US-based 'CHIPS Act' funding." },
+        { "symbol": "MU",   "desc": "A leader in High Bandwidth Memory (HBM); provides the high-speed storage required to feed data to AI processors." },
+        { "symbol": "TXN",  "desc": "The dominant analog and embedded processor maker; designs the power management chips essential in every server and AI accelerator." },
+        { "symbol": "ADI",  "desc": "Provides mixed-signal and data conversion ICs; its precision analog chips manage power delivery in high-density AI server racks." },
+        { "symbol": "NXPI", "desc": "Designs and manufactures edge AI, automotive, and secure element chips; provides mixed-signal silicon for AI infrastructure endpoints." },
+        { "symbol": "MPWR", "desc": "Integrated power-management ICs — the voltage-regulation layer of every GPU server; fastest-growing power IC company." },
+        { "symbol": "ON",   "desc": "Vertically integrated power semiconductor IDM; SiC and IGBT devices drive AI data center power efficiency." },
+        { "symbol": "STM",  "desc": "European IDM with power, motion, and microcontroller lines; widely designed into server power management and cooling control." },
+        { "symbol": "SWKS", "desc": "IDM for RF and connectivity chips; its Wi-Fi and Bluetooth silicon is inside the management cards of virtually every AI server." },
+        { "symbol": "QRVO", "desc": "IDM for advanced RF semiconductors; its GaN-on-SiC power amplifiers are used in 5G small cells and O-RAN deployments adjacent to data centers." },
+        { "symbol": "LSCC", "desc": "Low-power FPGA IDM; its CrossLink and Mach series chips are the de facto solution for AI server BMC, re-timer, and real-time management applications." },
+        { "symbol": "CRUS", "desc": "Mixed-signal and power conversion IDM; designs high-precision ADC/DAC chips used in power delivery monitoring systems inside AI servers." },
+        { "symbol": "ALGM", "desc": "Magnetic sensor and power IC IDM; its current-sensing ICs are designed into every AI server PSU for real-time power monitoring." },
+        { "symbol": "SMTC", "desc": "Designs analog and mixed-signal ICs; its ClearEdge CDR chips are the timing and clock recovery components inside optical transceivers for AI networking." }
+      ]
+    },
+    {
+      "id": "enterprise_software",
+      "name": "Enterprise / Consumer Software",
+      "description": "The monetization layer providing AI services and cloud compute.",
+      "tickers": [
+        { "symbol": "MSFT",  "desc": "The leading enterprise AI platform via Azure and Copilot; the largest single buyer of NVIDIA GPUs globally." },
+        { "symbol": "GOOGL", "desc": "Designs its own TPU AI accelerators and operates Google Cloud; a vertically integrated AI infrastructure leader." },
+        { "symbol": "AMZN",  "desc": "Operates AWS, the world's largest cloud; also designs its own Trainium and Inferentia AI chips for cost advantage." },
+        { "symbol": "PLTR",  "desc": "Provides the AIP platform that enterprises use to operationalize large language models on proprietary data." },
+        { "symbol": "ORCL",  "desc": "Provides enterprise database and cloud infrastructure; deploying massive GPU clusters for AI workloads." },
+        { "symbol": "ADBE",  "desc": "Provides creative AI software (Firefly); transitioning its Creative Cloud to AI-native workflows." },
+        { "symbol": "SNOW",  "desc": "The cloud data platform acting as the AI data layer; integrates directly with LLMs for enterprise AI applications." },
+        { "symbol": "META",  "desc": "The largest AI infrastructure investor outside cloud titans; designs its own MTIA inference chips and trains Llama models at extreme scale." },
+        { "symbol": "CRM",   "desc": "Enterprise AI platform (Einstein, Agentforce); drives GPU cloud demand and is the template for AI-native enterprise SaaS." },
+        { "symbol": "NOW",   "desc": "Leading enterprise AI automation platform; its Now Assist agents run on GPU infrastructure with rapidly expanding compute consumption." },
+        { "symbol": "DDOG",  "desc": "AI/ML observability platform; directly measures and monitors GPU utilization and LLM cost — the ops layer for AI infrastructure." },
+        { "symbol": "MDB",   "desc": "Document database powering vector search and AI application data layers; Atlas Vector Search is foundational AI data infrastructure." },
+        { "symbol": "SAP",   "desc": "World's largest enterprise software company; its SAP Business AI and Joule assistant are being deployed across tens of thousands of corporate AI instances globally." },
+        { "symbol": "INTU",  "desc": "AI-first financial software platform (TurboTax, QuickBooks); its GenAI financial assistant is one of the most widely used consumer AI products." },
+        { "symbol": "PANW",  "desc": "AI-powered cybersecurity platform protecting data center perimeters; Precision AI detects threats across network, endpoint, and cloud layers." },
+        { "symbol": "WDAY",  "desc": "Enterprise AI for HR and finance; its Illuminate AI assistant runs on hyperscaler GPU infrastructure and is a proxy for enterprise AI adoption velocity." },
+        { "symbol": "NET",   "desc": "Network-as-a-service and edge AI inference platform; Workers AI lets enterprises run LLM inference on its global edge network." }
+      ]
+    },
+    {
+      "id": "tech_equipment",
+      "name": "Tech Equipment / Devices",
+      "description": "Final rack integration, networking fabric, and enterprise hardware.",
+      "tickers": [
+        { "symbol": "AAPL", "desc": "Designs its own silicon (M-series) for AI inference at the edge; a key driver of on-device AI adoption at scale." },
+        { "symbol": "DELL", "desc": "Assembles AI servers (PowerEdge) with NVIDIA GPUs; the primary VAR selling full AI rack solutions to enterprises." },
+        { "symbol": "SMCI", "desc": "The fastest-growing AI server assembler; specializes in liquid-cooled, GPU-dense rack solutions for hyperscale data centers." },
+        { "symbol": "CSCO", "desc": "Provides the networking fabric (switches, routers) that interconnects GPU clusters for high-speed AI workloads." },
+        { "symbol": "HPE",  "desc": "Provides complete AI compute systems (GreenLake) with integrated liquid cooling; growing in HPC and AI supercomputing." },
+        { "symbol": "CLS",  "desc": "A contract electronics manufacturer assembling AI servers for Microsoft, Google, and Amazon at scale." },
+        { "symbol": "ANET", "desc": "Dominant AI data center networking switch vendor; Meta, Microsoft, and Google have named Arista primary supplier for 800G AI fabric." },
+        { "symbol": "IBM",  "desc": "Provides enterprise AI inference hardware (Telum II), quantum systems, and hybrid cloud AI infrastructure for regulated industries." },
+        { "symbol": "NTAP", "desc": "All-flash and hybrid storage optimized for AI training datasets; StorageGRID is the object store layer under hyperscale AI pipelines." },
+        { "symbol": "PSTG", "desc": "All-flash storage arrays purpose-built for AI/ML workloads; key vendor displacing HDD-based storage at AI labs and hyperscalers." },
+        { "symbol": "FLEX", "desc": "Contract electronics manufacturer assembling AI servers and rack systems for hyperscalers; direct complement to CLS." },
+        { "symbol": "HON",  "desc": "Industrial automation and building management; its data center solutions division provides environmental monitoring and BMS for the world's largest campuses." },
+        { "symbol": "FFIV", "desc": "AI-optimized application delivery and load balancing; routes inference traffic across GPU clusters and provides security for public AI APIs." },
+        { "symbol": "CIEN", "desc": "Coherent optical networking equipment connecting hyperscale data centers; 800G WaveLogic modem is the backbone of inter-DC AI traffic." },
+        { "symbol": "LITE", "desc": "Designs and manufactures optical transceivers and laser chips for AI data center interconnects; demand tied to the 400G/800G upgrade cycle." },
+        { "symbol": "AAOI", "desc": "Makes high-speed optical transceiver modules purpose-built for hyperscale data center interconnects; a pure-play beneficiary of the 400G/800G upgrade cycle." },
+        { "symbol": "VIAV", "desc": "Network and fiber test and measurement equipment; used to qualify optical links inside hyperscale AI clusters and certify new fiber builds." }
+      ]
+    }
+  ]
+}
