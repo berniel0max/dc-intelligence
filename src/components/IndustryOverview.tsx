@@ -61,8 +61,8 @@ function fmtB(b: number): string {
 
 // ── Stacked bar chart (SVG) ───────────────────────────────────────────────────
 
-const ML = 48, MR = 8, MT = 12, MB = 22;
-const TW = 800, TH = 200;
+const ML = 58, MR = 10, MT = 14, MB = 26;
+const TW = 900, TH = 240;
 const CW = TW - ML - MR, CH = TH - MT - MB;
 
 interface ChartProps {
@@ -102,7 +102,7 @@ function StackedBarChart({ tf, hoveredSector, onHoverSector }: ChartProps) {
               stroke={RH.grid} strokeWidth="0.5"
               strokeDasharray={i === 0 ? undefined : '3 4'} />
             <text x={ML - 6} y={y + 3.5} textAnchor="end"
-              fill={RH.axis} fontSize="9"
+              fill={RH.axis} fontSize="11"
               fontFamily="'Geist Mono','Courier New',monospace">
               {fmtB(tick)}
             </text>
@@ -178,7 +178,7 @@ function StackedBarChart({ tf, hoveredSector, onHoverSector }: ChartProps) {
 
             {/* X-axis label — highlights white on bar hover */}
             <text x={cx} y={TH - 5} textAnchor="middle"
-              fill={isBarHov ? '#ccc' : '#777'} fontSize="9"
+              fill={isBarHov ? '#ccc' : '#777'} fontSize="11"
               fontWeight={isBarHov ? '600' : '400'}
               style={{ transition: 'fill 120ms ease' }}
               fontFamily="'Geist Mono','Courier New',monospace">
@@ -201,12 +201,12 @@ function StackedBarChart({ tf, hoveredSector, onHoverSector }: ChartProps) {
                     <rect x={pX} y={pY} width={pW} height={30} rx="4"
                       fill="#1a1a1a" stroke={segColor} strokeWidth="0.8" strokeOpacity="0.7" />
                     <text x={pX + pW / 2} y={pY + 11} textAnchor="middle"
-                      fill={RH.muted} fontSize="8"
+                      fill={RH.muted} fontSize="12"
                       fontFamily="'Geist Mono','Courier New',monospace">
                       {segShort}
                     </text>
                     <text x={pX + pW / 2} y={pY + 23} textAnchor="middle"
-                      fill={segColor} fontSize="10" fontWeight="700"
+                      fill={segColor} fontSize="12" fontWeight="700"
                       fontFamily="'Geist Mono','Courier New',monospace">
                       {segVal}
                     </text>
@@ -223,7 +223,7 @@ function StackedBarChart({ tf, hoveredSector, onHoverSector }: ChartProps) {
                   <rect x={pX} y={pY} width={pW} height={18} rx="4"
                     fill="#1e1e1e" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
                   <text x={pX + pW / 2} y={pY + 12.5} textAnchor="middle"
-                    fill="#fff" fontSize="9.5" fontWeight="700"
+                    fill="#fff" fontSize="11.5" fontWeight="700"
                     fontFamily="'Geist Mono','Courier New',monospace">
                     {totalVal}
                   </text>
@@ -335,10 +335,10 @@ function Legend({ hoveredSector, onHoverSector }: LegendProps) {
             onMouseLeave={() => onHoverSector(null)}
           >
             <div className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: ACCENT[id] }} />
-            <span className="text-[10px]" style={{ color: isMatch ? '#fff' : RH.secondary }}>
+            <span className="text-[12px]" style={{ color: isMatch ? '#fff' : RH.secondary }}>
               {SECTOR_SHORT[id]}
             </span>
-            <span className="text-[10px] font-mono" style={{ color: isMatch ? RH.secondary : RH.muted }}>
+            <span className="text-[12px] font-mono" style={{ color: isMatch ? RH.secondary : RH.muted }}>
               {((SECTOR_CURRENT[id] / total) * 100).toFixed(1)}%
             </span>
           </div>
@@ -364,15 +364,15 @@ export default function IndustryOverview() {
       }}
     >
       {/* ── Header row ───────────────────────────────────── */}
-      <div className="px-5 pt-5 pb-4 flex flex-wrap items-end gap-6"
+      <div className="px-6 pt-6 pb-5 flex flex-wrap items-end gap-6"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
 
         {/* Total market cap */}
         <div>
-          <p className="text-[9px] uppercase tracking-widest mb-1" style={{ color: RH.muted }}>
+          <p className="text-[13px] uppercase tracking-widest mb-1" style={{ color: RH.muted }}>
             AI Infrastructure — Total Market Cap
           </p>
-          <p className="text-3xl font-bold tabular-nums" style={{ color: RH.text }}>
+          <p className="text-4xl font-bold tabular-nums" style={{ color: RH.text }}>
             {fmtTotal(INDUSTRY_TOTAL_B)}
           </p>
         </div>
@@ -380,26 +380,26 @@ export default function IndustryOverview() {
         {/* Deltas + counts + macro signals — all on one line */}
         <div className="flex gap-5 pb-0.5 flex-wrap">
           <div className="flex flex-col gap-0.5">
-            <span className="text-[9px] uppercase tracking-widest" style={{ color: RH.muted }}>Daily</span>
-            <span className="text-sm font-semibold tabular-nums" style={{ color: RH.green }}>
+            <span className="text-[13px] uppercase tracking-widest" style={{ color: RH.muted }}>Daily</span>
+            <span className="text-base font-semibold tabular-nums" style={{ color: RH.green }}>
               ▲ {INDUSTRY_DAILY_PCT.toFixed(1)}%
             </span>
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-[9px] uppercase tracking-widest" style={{ color: RH.muted }}>YTD</span>
-            <span className="text-sm font-semibold tabular-nums" style={{ color: RH.green }}>
+            <span className="text-[13px] uppercase tracking-widest" style={{ color: RH.muted }}>YTD</span>
+            <span className="text-base font-semibold tabular-nums" style={{ color: RH.green }}>
               ▲ {INDUSTRY_YTD_PCT.toFixed(1)}%
             </span>
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-[9px] uppercase tracking-widest" style={{ color: RH.muted }}>Sectors</span>
-            <span className="text-sm font-semibold tabular-nums" style={{ color: RH.secondary }}>
+            <span className="text-[13px] uppercase tracking-widest" style={{ color: RH.muted }}>Sectors</span>
+            <span className="text-base font-semibold tabular-nums" style={{ color: RH.secondary }}>
               {sectorsData.sectors.length}
             </span>
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-[9px] uppercase tracking-widest" style={{ color: RH.muted }}>Tickers</span>
-            <span className="text-sm font-semibold tabular-nums" style={{ color: RH.secondary }}>
+            <span className="text-[13px] uppercase tracking-widest" style={{ color: RH.muted }}>Tickers</span>
+            <span className="text-base font-semibold tabular-nums" style={{ color: RH.secondary }}>
               {sectorsData.sectors.reduce((n, s) => n + s.tickers.length, 0)}
             </span>
           </div>
@@ -412,14 +412,14 @@ export default function IndustryOverview() {
             { label: 'Global Pipeline', value: '100 GW', delta: 'by 2030', unit: '' },
           ].map(({ label, value, delta, unit }) => (
             <div key={label} className="flex flex-col gap-0.5">
-              <span className="text-[9px] uppercase tracking-widest whitespace-nowrap" style={{ color: RH.muted }}>
+              <span className="text-[13px] uppercase tracking-widest whitespace-nowrap" style={{ color: RH.muted }}>
                 {label}
               </span>
               <div className="flex items-baseline gap-1">
-                <span className="text-sm font-semibold tabular-nums" style={{ color: RH.secondary }}>
+                <span className="text-base font-semibold tabular-nums" style={{ color: RH.secondary }}>
                   {value}
                 </span>
-                <span className="text-[9px] font-mono tabular-nums" style={{ color: RH.green }}>
+                <span className="text-[13px] font-mono tabular-nums" style={{ color: RH.green }}>
                   {delta.startsWith('+') ? `▲ ${delta}` : delta}{unit ? ` ${unit}` : ''}
                 </span>
               </div>
@@ -429,20 +429,20 @@ export default function IndustryOverview() {
       </div>
 
       {/* ── Allocation bar ───────────────────────────────── */}
-      <div className="px-5 pt-3 pb-2">
-        <p className="text-[9px] uppercase tracking-widest mb-2" style={{ color: RH.muted }}>
+      <div className="px-6 pt-4 pb-3">
+        <p className="text-[13px] uppercase tracking-widest mb-2" style={{ color: RH.muted }}>
           Allocation by Sector
         </p>
         <AllocationBar hoveredSector={hoveredSector} onHoverSector={setHoveredSector} />
       </div>
 
       {/* ── Chart ────────────────────────────────────────── */}
-      <div className="px-5 pt-2 pb-1">
+      <div className="px-6 pt-3 pb-1">
         <StackedBarChart tf={tf} hoveredSector={hoveredSector} onHoverSector={setHoveredSector} />
       </div>
 
       {/* ── Controls row ─────────────────────────────────── */}
-      <div className="px-5 pb-4 flex items-center justify-between flex-wrap gap-3">
+      <div className="px-6 pb-5 flex items-center justify-between flex-wrap gap-3">
         {/* Time frames */}
         <div className="flex gap-0.5">
           {OVERVIEW_TIME_FRAMES.map(t => {
@@ -451,7 +451,7 @@ export default function IndustryOverview() {
               <button
                 key={t}
                 onClick={() => setTf(t)}
-                className="text-[9px] font-semibold px-2.5 py-1 rounded transition-all duration-100 cursor-pointer"
+                className="text-[13px] font-semibold px-2.5 py-1 rounded transition-all duration-100 cursor-pointer"
                 style={{
                   backgroundColor: on ? 'rgba(255,255,255,0.1)' : 'transparent',
                   color: on ? RH.text : RH.muted,

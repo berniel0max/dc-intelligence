@@ -307,14 +307,14 @@ export default function SupplyChainMap() {
                   title="Drag to reorder layer"
                 >⠿</span>
               )}
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] shrink-0" style={{ color: '#444' }}>
+              <span className="text-[12px] font-semibold uppercase tracking-[0.18em] shrink-0" style={{ color: '#444' }}>
                 {layer.label}
               </span>
               <div className="flex-1 h-px" style={{ backgroundColor: C.border }} />
               {editMode && (
                 <button
                   onClick={() => removeLayer(layer.id)}
-                  className="shrink-0 text-[9px] px-1.5 py-0.5 rounded leading-none"
+                  className="shrink-0 text-[11px] px-1.5 py-0.5 rounded leading-none"
                   style={{ color: C.muted, border: `1px solid ${C.border}` }}
                   title="Remove layer"
                 >✕</button>
@@ -360,7 +360,7 @@ export default function SupplyChainMap() {
                         >⠿</span>
                         <button
                           onClick={() => removeSector(layer.id, sectorId)}
-                          className="text-[9px] px-1 py-0.5 rounded leading-none"
+                          className="text-[11px] px-1 py-0.5 rounded leading-none"
                           style={{ color: C.muted, border: `1px solid ${C.border}`, backgroundColor: '#0e0e0e' }}
                           title={`Remove ${sector.name}`}
                         >✕</button>
@@ -401,14 +401,14 @@ export default function SupplyChainMap() {
                       onKeyDown={e => { if (e.key === 'Enter') addSector(layer.id); if (e.key === 'Escape') cancelAddSector(); }}
                     />
                     <div className="flex gap-2 mt-1">
-                      <button onClick={() => addSector(layer.id)} className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded" style={{ color: C.neon, border: '1px solid #b1ff5640' }}>Add</button>
-                      <button onClick={cancelAddSector} className="text-[9px] uppercase tracking-wider px-2 py-0.5" style={{ color: C.muted }}>Cancel</button>
+                      <button onClick={() => addSector(layer.id)} className="text-[11px] uppercase tracking-wider px-2 py-0.5 rounded" style={{ color: C.neon, border: '1px solid #b1ff5640' }}>Add</button>
+                      <button onClick={cancelAddSector} className="text-[11px] uppercase tracking-wider px-2 py-0.5" style={{ color: C.muted }}>Cancel</button>
                     </div>
                   </div>
                 ) : (
                   <button
                     onClick={() => { setAddingTo(layer.id); cancelAddLayer(); }}
-                    className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded"
+                    className="text-[11px] uppercase tracking-wider px-2 py-0.5 rounded"
                     style={{ color: C.dim, border: `1px dashed ${C.borderDash}` }}
                   >+ Add sector</button>
                 )}
@@ -453,14 +453,14 @@ export default function SupplyChainMap() {
                 onKeyDown={e => { if (e.key === 'Enter') addLayer(); if (e.key === 'Escape') cancelAddLayer(); }}
               />
               <div className="flex gap-2 mt-1">
-                <button onClick={addLayer} className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded" style={{ color: C.neon, border: '1px solid #b1ff5640' }}>Add layer</button>
-                <button onClick={cancelAddLayer} className="text-[9px] uppercase tracking-wider px-2 py-0.5" style={{ color: C.muted }}>Cancel</button>
+                <button onClick={addLayer} className="text-[11px] uppercase tracking-wider px-2 py-0.5 rounded" style={{ color: C.neon, border: '1px solid #b1ff5640' }}>Add layer</button>
+                <button onClick={cancelAddLayer} className="text-[11px] uppercase tracking-wider px-2 py-0.5" style={{ color: C.muted }}>Cancel</button>
               </div>
             </div>
           ) : (
             <button
               onClick={() => { setAddingLayer(true); cancelAddSector(); }}
-              className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded"
+              className="text-[11px] uppercase tracking-wider px-2 py-0.5 rounded"
               style={{ color: C.dim, border: `1px dashed ${C.borderDash}` }}
             >+ Add layer</button>
           )}

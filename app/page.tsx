@@ -3,8 +3,8 @@ import IndustryOverview from '@/src/components/IndustryOverview';
 
 export default function Home() {
   return (
-    <main className="min-h-screen px-6 py-10 sm:px-10" style={{ backgroundColor: '#0a0a0a' }}>
-      <div className="max-w-4xl mx-auto">
+    <main className="min-h-screen px-6 py-10 sm:px-12" style={{ backgroundColor: '#0a0a0a' }}>
+      <div className="max-w-[1400px] mx-auto">
 
         {/* Header */}
         <header className="mb-10">

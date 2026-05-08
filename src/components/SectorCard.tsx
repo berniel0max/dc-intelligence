@@ -112,13 +112,13 @@ function svgLinePath(
 
 // ── Line chart ────────────────────────────────────────────────────────────────
 
-const ML = 42, MR = 6, MT = 8;
-const TW = 500;
-const MAIN_CH = 130; // main chart draw height
-const VOL_H   = 40;  // volume sub-panel
-const RSI_H   = 52;  // RSI sub-panel
-const X_H     = 22;  // x-axis label area
-const SEP     = 8;   // gap between panels
+const ML = 50, MR = 8, MT = 10;
+const TW = 600;
+const MAIN_CH = 170; // main chart draw height
+const VOL_H   = 52;  // volume sub-panel
+const RSI_H   = 64;  // RSI sub-panel
+const X_H     = 26;  // x-axis label area
+const SEP     = 10;  // gap between panels
 
 function fmtY(v: number): string {
   if (v >= 1000) return `$${(v / 1000).toFixed(v >= 2000 ? 1 : 2)}T`;
@@ -284,7 +284,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
               stroke={RH.chartGrid} strokeWidth="0.5"
               strokeDasharray={i === 0 ? undefined : '3 4'} />
             <text x={ML - 5} y={y + 3.5} textAnchor="end"
-              fill={RH.chartAxis} fontSize="8.5"
+              fill={RH.chartAxis} fontSize="10.5"
               fontFamily="'Geist Mono','Courier New',monospace">
               {fmt(tick)}
             </text>
@@ -296,7 +296,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
       {/* BB indicator label */}
       {showBB && (
         <text x={TW - MR - 3} y={MT + 9} textAnchor="end"
-          fill={color} fillOpacity="0.5" fontSize="7.5"
+          fill={color} fillOpacity="0.5" fontSize="11.5"
           fontFamily="'Geist Mono','Courier New',monospace">
           BB 20
         </text>
@@ -333,7 +333,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
           <line x1={ML} y1={volY0} x2={TW - MR} y2={volY0}
             stroke="rgba(255,255,255,0.06)" strokeWidth="0.5" />
           <text x={TW - MR - 3} y={volY0 + 9} textAnchor="end"
-            fill={RH.chartAxis} fontSize="7.5"
+            fill={RH.chartAxis} fontSize="11.5"
             fontFamily="'Geist Mono','Courier New',monospace">
             VOL
           </text>
@@ -358,7 +358,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
           <line x1={ML} y1={rsiY0} x2={TW - MR} y2={rsiY0}
             stroke="rgba(255,255,255,0.06)" strokeWidth="0.5" />
           <text x={TW - MR - 3} y={rsiY0 + 9} textAnchor="end"
-            fill={RH.chartAxis} fontSize="7.5"
+            fill={RH.chartAxis} fontSize="11.5"
             fontFamily="'Geist Mono','Courier New',monospace">
             RSI 14
           </text>
@@ -373,7 +373,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
                     : lvl === 70 ? `${RH.red}55` : `${RH.green}55`}
                   strokeWidth="0.5" strokeDasharray={lvl === 50 ? undefined : '3 4'} />
                 <text x={ML - 4} y={ly + 3.5} textAnchor="end"
-                  fill={RH.chartAxis} fontSize="7.5"
+                  fill={RH.chartAxis} fontSize="11.5"
                   fontFamily="'Geist Mono','Courier New',monospace">
                   {lvl}
                 </text>
@@ -391,7 +391,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
       {/* ── X-axis labels — fade when hovering ──────────── */}
       {xLabels.map(({ lbl, x }, i) => (
         <text key={i} x={x} y={svgH - 4} textAnchor="middle"
-          fill={RH.chartAxis} fontSize="8.5"
+          fill={RH.chartAxis} fontSize="10.5"
           fontFamily="'Geist Mono','Courier New',monospace"
           opacity={hoverIdx !== null ? 0 : 1}
           style={{ transition: 'opacity 80ms' }}>
@@ -412,7 +412,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
           <rect x={pillX} y={pillY} width={pillW} height={18} rx="1"
             fill="#1a1a1a" stroke={color} strokeWidth="0.7" strokeOpacity="0.7" />
           <text x={pillX + pillW / 2} y={pillY + 12.5} textAnchor="middle"
-            fill={color} fontSize="9.5" fontWeight="700"
+            fill={color} fontSize="11.5" fontWeight="700"
             fontFamily="'Geist Mono','Courier New',monospace">
             {hVal}
           </text>
@@ -428,7 +428,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
                 <rect x={rpx} y={rpy} width={36} height={12} rx="1"
                   fill="#110d18" stroke="#a855f766" strokeWidth="0.7" />
                 <text x={rpx + 18} y={rpy + 9} textAnchor="middle"
-                  fill="#a855f7" fontSize="8" fontWeight="600"
+                  fill="#a855f7" fontSize="10" fontWeight="600"
                   fontFamily="'Geist Mono','Courier New',monospace">
                   {rsiData[hoverIdx].toFixed(1)}
                 </text>
@@ -439,7 +439,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
           {/* Date label on x-axis at crosshair position */}
           {hDate && (
             <text x={hx} y={svgH - 4} textAnchor="middle"
-              fill={RH.secondary} fontSize="8.5"
+              fill={RH.secondary} fontSize="10.5"
               fontFamily="'Geist Mono','Courier New',monospace">
               {hDate}
             </text>
@@ -547,21 +547,21 @@ function TickerTable({
   // cols: sym 36 | price 46 | spark 68 | cap 38 | pe 36 | ytd 44 | 1y 44 | debt 40 | remove 14
   const COLS = '36px 46px 68px 38px 36px 44px 44px 40px 14px';
   const GAP  = '0 3px';
-  const VAL  = 'text-[9px] font-mono tabular-nums leading-none';
+  const VAL  = 'text-[13px] font-mono tabular-nums leading-none';
 
   return (
-    <div className="mx-4 mb-4">
+    <div className="mx-5 mb-5">
       {/* Header */}
       <div className="grid items-center mb-0.5 px-2"
         style={{ gridTemplateColumns: COLS, gap: GAP }}>
-        <span className="text-[8px] uppercase tracking-wider" style={{ color: RH.muted }}>Sym</span>
-        <span className="text-[8px] uppercase tracking-wider" style={{ color: RH.muted }}>Price</span>
-        <span className="text-[8px] uppercase tracking-wider" style={{ color: RH.muted }}>7D</span>
+        <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>Sym</span>
+        <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>Price</span>
+        <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>7D</span>
         <button onClick={handleCapSort}
           className="flex items-center gap-0.5 cursor-pointer"
           style={{ color: capSort ? RH.secondary : RH.muted }}
           title="Sort by market cap">
-          <span className="text-[8px] uppercase tracking-wider">Mkt Cap</span>
+          <span className="text-[12px] uppercase tracking-wider">Mkt Cap</span>
           <svg width="6" height="6" viewBox="0 0 8 8" fill="none" style={{ opacity: capSort ? 0.9 : 0.5, flexShrink: 0 }}>
             {capSort === 'asc'
               ? <path d="M2 5l2-4 2 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -573,16 +573,16 @@ function TickerTable({
           className="flex items-center gap-0.5 cursor-pointer"
           style={{ color: RH.muted }}
           title="Toggle Fwd / TTM P/E">
-          <span className="text-[8px] uppercase tracking-wider">
+          <span className="text-[12px] uppercase tracking-wider">
             {peMode === 'fwd' ? 'Fwd PE' : 'TTM PE'}
           </span>
           <svg width="6" height="6" viewBox="0 0 8 8" fill="none" style={{ opacity: 0.5, flexShrink: 0 }}>
             <path d="M2 3l2-2 2 2M2 5l2 2 2-2" stroke={RH.muted} strokeWidth="1.4" strokeLinecap="round" />
           </svg>
         </button>
-        <span className="text-[8px] uppercase tracking-wider" style={{ color: RH.muted }}>YTD</span>
-        <span className="text-[8px] uppercase tracking-wider" style={{ color: RH.muted }}>1Y</span>
-        <span className="text-[8px] uppercase tracking-wider" style={{ color: RH.muted }}>Debt</span>
+        <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>YTD</span>
+        <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>1Y</span>
+        <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>Debt</span>
         <span />
       </div>
 
@@ -611,7 +611,7 @@ function TickerTable({
               onMouseLeave={() => setHoveredRow(null)}
               onClick={() => onSelect(sym)}
             >
-              <span className="text-[9px] font-mono font-bold truncate"
+              <span className="text-[13px] font-mono font-bold truncate"
                 style={{ color: isActive ? RH.neon : RH.text }}>
                 {sym}
               </span>
@@ -648,14 +648,14 @@ function TickerTable({
                   lineHeight: 1,
                   padding: 0,
                   cursor: 'pointer',
-                  fontSize: 10,
+                  fontSize: 12,
                 }}
                 title={`Remove ${sym}`}
               >✕</button>
             </div>
 
             {isActive && desc && (
-              <p className="px-2 pb-0.5 text-[9px] leading-relaxed"
+              <p className="px-2 pb-0.5 text-[13px] leading-relaxed"
                 style={{ color: RH.muted, borderLeft: '2px solid #b1ff5630' }}>
                 {desc}
               </p>
@@ -675,7 +675,7 @@ function TickerTable({
               onKeyDown={handleKeyDown}
               placeholder="TICKER"
               maxLength={6}
-              className="w-20 bg-transparent font-mono text-[11px] font-bold tracking-wider outline-none placeholder:opacity-30"
+              className="w-20 bg-transparent font-mono text-[13px] font-bold tracking-wider outline-none placeholder:opacity-30"
               style={{
                 color: inputError ? RH.red : RH.text,
                 borderBottom: `1px solid ${inputError ? RH.red : 'rgba(255,255,255,0.18)'}`,
@@ -683,19 +683,19 @@ function TickerTable({
               }}
             />
             {inputError ? (
-              <span className="text-[9px] font-mono" style={{ color: RH.red }}>{inputError}</span>
+              <span className="text-[13px] font-mono" style={{ color: RH.red }}>{inputError}</span>
             ) : (
               <>
                 <button
                   onClick={handleSubmit}
-                  className="text-[9px] font-semibold cursor-pointer"
+                  className="text-[13px] font-semibold cursor-pointer"
                   style={{ color: RH.neon }}
                 >
                   Add
                 </button>
                 <button
                   onClick={() => { setAdding(false); setInputVal(''); }}
-                  className="text-[9px] cursor-pointer"
+                  className="text-[13px] cursor-pointer"
                   style={{ color: RH.muted }}
                 >
                   Cancel
@@ -712,7 +712,7 @@ function TickerTable({
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
               <path d="M5 2v6M2 5h6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
             </svg>
-            <span className="text-[9px] uppercase tracking-widest group-hover:text-white transition-colors">
+            <span className="text-[13px] uppercase tracking-widest group-hover:text-white transition-colors">
               Add ticker
             </span>
           </button>
@@ -727,8 +727,8 @@ function TickerTable({
 function MetricSm({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="flex flex-col gap-0.5 shrink-0">
-      <span className="text-[8px] uppercase tracking-widest" style={{ color: RH.muted }}>{label}</span>
-      <span className="text-[10px] font-semibold tabular-nums leading-none"
+      <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>{label}</span>
+      <span className="text-[12px] font-semibold tabular-nums leading-none"
         style={{ color: color ?? RH.secondary }}>{value}</span>
     </div>
   );
@@ -737,8 +737,8 @@ function MetricSm({ label, value, color }: { label: string; value: string; color
 function DeltaMetricSm({ label, value, positive }: { label: string; value: string; positive: boolean }) {
   return (
     <div className="flex flex-col gap-0.5 shrink-0">
-      <span className="text-[8px] uppercase tracking-widest" style={{ color: RH.muted }}>{label}</span>
-      <span className="text-[10px] font-semibold tabular-nums leading-none"
+      <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>{label}</span>
+      <span className="text-[12px] font-semibold tabular-nums leading-none"
         style={{ color: positive ? RH.green : RH.red }}>
         {positive ? '▲' : '▼'} {value}
       </span>
@@ -938,7 +938,7 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
       }}
     >
       {/* ── Header ───────────────────────────────────────── */}
-      <div className="px-4 pt-4 pb-3">
+      <div className="px-5 pt-5 pb-4">
         {ticker ? (
           <>
             {/* Back breadcrumb */}
@@ -949,7 +949,7 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                 <path d="M6.5 2L3 5L6.5 8" stroke={RH.muted} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <span className="text-[10px]" style={{ color: RH.muted }}>
+              <span className="text-[12px]" style={{ color: RH.muted }}>
                 {sector.name}
               </span>
             </button>
@@ -970,7 +970,7 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
                   </span>
                 </div>
               </div>
-              <span className="text-[10px] font-mono" style={{ color: RH.muted }}>
+              <span className="text-[12px] font-mono" style={{ color: RH.muted }}>
                 {String(index + 1).padStart(2, '0')}
               </span>
             </div>
@@ -987,12 +987,12 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
                 <h3 className="text-[13px] font-semibold leading-snug" style={{ color: RH.text }}>
                   {sector.name}
                 </h3>
-                <p className="text-[10px] mt-0.5 leading-relaxed line-clamp-1" style={{ color: RH.muted }}>
+                <p className="text-[12px] mt-0.5 leading-relaxed line-clamp-1" style={{ color: RH.muted }}>
                   {sector.description}
                 </p>
               </div>
             </div>
-            <span className="text-[10px] font-mono shrink-0 mt-0.5" style={{ color: RH.muted }}>
+            <span className="text-[12px] font-mono shrink-0 mt-0.5" style={{ color: RH.muted }}>
               {String(index + 1).padStart(2, '0')}
             </span>
           </div>
@@ -1001,7 +1001,7 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
 
       {/* ── Metrics row ──────────────────────────────────── */}
       <div
-        className="mx-4 mb-3 px-3 py-1.5 flex items-end gap-2"
+        className="mx-5 mb-4 px-4 py-2 flex items-end gap-2"
         style={{
           borderRadius: 3,
           backgroundColor: 'rgba(255,255,255,0.025)',
@@ -1012,15 +1012,15 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
           /* ── Ticker mode: all on one line ── */
           <>
             <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[8px] uppercase tracking-widest" style={{ color: RH.muted }}>Price</span>
-              <span className="text-[14px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
+              <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Price</span>
+              <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
                 {price}
               </span>
             </div>
 
             <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[8px] uppercase tracking-widest" style={{ color: RH.muted }}>Mkt Cap</span>
-              <span className="text-[11px] font-semibold tabular-nums leading-none" style={{ color: RH.secondary }}>
+              <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Mkt Cap</span>
+              <span className="text-[13px] font-semibold tabular-nums leading-none" style={{ color: RH.secondary }}>
                 {cap}
               </span>
             </div>
@@ -1039,8 +1039,8 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
           /* ── Sector mode: Agg Cap left (large), rest inline ── */
           <>
             <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[8px] uppercase tracking-widest" style={{ color: RH.muted }}>Agg Cap</span>
-              <span className="text-[14px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
+              <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Agg Cap</span>
+              <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
                 {cap}
               </span>
             </div>
@@ -1059,12 +1059,12 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
       </div>
 
       {/* ── Chart ────────────────────────────────────────── */}
-      <div className="mx-4 overflow-hidden relative" style={{ backgroundColor: RH.chartBg, borderRadius: 2 }}>
+      <div className="mx-5 overflow-hidden relative" style={{ backgroundColor: RH.chartBg, borderRadius: 2 }}>
         {/* Loading shimmer overlay */}
         {histLoading && (
           <div className="absolute inset-0 flex items-center justify-center"
             style={{ backgroundColor: `${RH.chartBg}cc`, zIndex: 1 }}>
-            <span className="text-[9px] font-mono" style={{ color: RH.muted }}>Loading…</span>
+            <span className="text-[13px] font-mono" style={{ color: RH.muted }}>Loading…</span>
           </div>
         )}
         <LineChart
@@ -1078,7 +1078,7 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
       </div>
 
       {/* ── Time frame + indicator controls ──────────────── */}
-      <div className="px-4 pt-1.5 pb-1 flex items-center justify-between gap-2">
+      <div className="px-5 pt-2 pb-1.5 flex items-center justify-between gap-2">
         {/* Time frames */}
         <div className="flex gap-0.5">
           {TIME_FRAMES.map(tf => {
@@ -1087,7 +1087,7 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
               <button
                 key={tf}
                 onClick={() => setTimeFrame(tf)}
-                className="text-[9px] font-semibold px-2 py-1 transition-all duration-100 cursor-pointer"
+                className="text-[13px] font-semibold px-2 py-1 transition-all duration-100 cursor-pointer"
                 style={{
                   borderRadius: 2,
                   backgroundColor: on ? 'rgba(255,255,255,0.1)' : 'transparent',
@@ -1110,7 +1110,7 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
                 <button
                   key={ind}
                   onClick={() => toggleIndicator(ind)}
-                  className="text-[8.5px] font-semibold px-2 py-0.5 cursor-pointer transition-all duration-100"
+                  className="text-[10.5px] font-semibold px-2 py-0.5 cursor-pointer transition-all duration-100"
                   style={{
                     borderRadius:    2,
                     backgroundColor: on ? `${accentColor}18` : 'transparent',
@@ -1130,7 +1130,7 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
             <span className="flex items-center gap-1" style={{ color: RH.muted }}>
               <span className="inline-block w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: accentColor, opacity: 0.8 }} />
-              <span className="text-[8px] font-mono">{updatedStr}</span>
+              <span className="text-[12px] font-mono">{updatedStr}</span>
             </span>
           )}
         </div>
