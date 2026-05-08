@@ -1163,9 +1163,17 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
           <>
             <div className="flex flex-col gap-0.5 shrink-0">
               <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Price</span>
-              <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
-                {price}
-              </span>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
+                  {price}
+                </span>
+                <span
+                  className="text-[13px] font-semibold tabular-nums leading-none"
+                  style={{ color: daily >= 0 ? RH.green : RH.red }}
+                >
+                  {daily >= 0 ? '▲' : '▼'} {Math.abs(daily).toFixed(1)}%
+                </span>
+              </div>
             </div>
 
             <div className="flex flex-col gap-0.5 shrink-0">
@@ -1177,7 +1185,6 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
 
             <div className="w-px self-stretch shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
 
-            <DeltaMetricSm label="Daily" value={`${Math.abs(daily).toFixed(1)}%`} positive={daily >= 0} />
             <DeltaMetricSm
               label={timeFrame}
               value={barPeriodPct !== null ? `${Math.abs(barPeriodPct).toFixed(1)}%` : '—'}
@@ -1194,14 +1201,21 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
           <>
             <div className="flex flex-col gap-0.5 shrink-0">
               <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Agg Cap</span>
-              <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
-                {cap}
-              </span>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
+                  {cap}
+                </span>
+                <span
+                  className="text-[13px] font-semibold tabular-nums leading-none"
+                  style={{ color: daily >= 0 ? RH.green : RH.red }}
+                >
+                  {daily >= 0 ? '▲' : '▼'} {Math.abs(daily).toFixed(1)}%
+                </span>
+              </div>
             </div>
 
             <div className="w-px self-stretch shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
 
-            <DeltaMetricSm label="Daily" value={`${Math.abs(daily).toFixed(1)}%`}  positive={daily >= 0} />
             <DeltaMetricSm label="YTD"   value={`${Math.abs(ytd).toFixed(1)}%`}    positive={ytd >= 0} />
 
             <div className="w-px self-stretch shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
