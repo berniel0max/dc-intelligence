@@ -116,10 +116,24 @@ export async function fetchDailyHistory(
 }
 
 /**
- * Company profile — name, description, sector, industry.
- * Used to populate descriptions for manually added tickers.
+ * Company profile — name, description, CEO, headcount.
+ * Used to populate descriptions for manually added tickers and ticker detail header.
  */
-export async function fetchProfile(symbol: string): Promise<{ description: string; name: string } | null> {
+function parseFullTimeEmployees(v: unknown): number | null {
+  if (v == null || v === '') return null;
+  if (typeof v === 'number' && Number.isFinite(v)) return Math.round(v);
+  const n = parseInt(String(v).replace(/,/g, '').replace(/\s/g, ''), 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+export interface FMPProfileBrief {
+  name: string;
+  description: string;
+  ceo: string;
+  fullTimeEmployees: number | null;
+}
+
+export async function fetchProfile(symbol: string): Promise<FMPProfileBrief | null> {
   const url = `${FMP_BASE}/profile?symbol=${symbol}&apikey=${apiKey()}`;
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) return null;
@@ -127,8 +141,10 @@ export async function fetchProfile(symbol: string): Promise<{ description: strin
   const item = Array.isArray(data) ? data[0] : data;
   if (!item) return null;
   return {
-    name:        item.companyName ?? item.name ?? symbol,
-    description: item.description ?? '',
+    name:               item.companyName ?? item.name ?? symbol,
+    description:        item.description ?? '',
+    ceo:                String(item.ceo ?? '').trim(),
+    fullTimeEmployees:  parseFullTimeEmployees(item.fullTimeEmployees),
   };
 }
 

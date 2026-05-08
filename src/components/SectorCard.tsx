@@ -17,6 +17,8 @@ const RH = {
   red:          '#ff4436',   // negative metric
   text:         '#ffffff',
   secondary:    '#8a8a8a',
+  /** Company blurb / secondary body — higher contrast than `secondary` for long text. */
+  snippet:      'rgba(255,255,255,0.78)',
   muted:        '#666666',
   chartBg:      '#0a0a0a',
   chartGrid:    'rgba(255,255,255,0.04)',
@@ -741,7 +743,7 @@ function TickerTable({
       <div className="mb-0.5" style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
 
       {/* Rows */}
-      {sortedTickers.map(({ symbol: sym, desc }) => {
+      {sortedTickers.map(({ symbol: sym }) => {
         // Live data takes priority; fall back to static mock
         const t = liveQuotes[sym] ?? tickerData[sym];
         const isActive = activeTicker === sym;
@@ -821,13 +823,6 @@ function TickerTable({
                 >✕</button>
               ) : null}
             </div>
-
-            {isActive && desc && (
-              <p className="px-2 pb-0.5 text-[13px] leading-relaxed"
-                style={{ color: RH.muted, borderLeft: '2px solid #b1ff5630' }}>
-                {desc}
-              </p>
-            )}
           </div>
         );
       })}
@@ -926,6 +921,32 @@ function fmtLiveCap(billions: number): string {
   return `$${(billions * 1000).toFixed(0)}M`;
 }
 
+function fmtEmployeeCount(n: number): string {
+  return new Intl.NumberFormat('en-US').format(n);
+}
+
+function TickerProfileMetaDisplay({
+  meta,
+}: {
+  meta: { ceo: string; fullTimeEmployees: number | null };
+}) {
+  return (
+    <div
+      className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[12px] leading-snug"
+      style={{ color: RH.muted }}
+    >
+      <div className="min-w-0">
+        CEO · <span style={{ color: RH.secondary }}>{meta.ceo || '—'}</span>
+      </div>
+      <div className="shrink-0 tabular-nums" style={{ color: RH.secondary }}>
+        {meta.fullTimeEmployees != null
+          ? `${fmtEmployeeCount(meta.fullTimeEmployees)} employees`
+          : '—'}
+      </div>
+    </div>
+  );
+}
+
 export default function SectorCard({ sector, health, accentColor, index, editAllowed }: SectorCardProps) {
   const [timeFrame, setTimeFrame]       = useState<TimeFrame>('3M');
   const [activeTicker, setActiveTicker] = useState<string | null>(null);
@@ -945,6 +966,11 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   } | null>(null);
   const [histLoading, setHistLoading]   = useState(false);
   const [sparklines, setSparklines]     = useState<Record<string, number[]>>({});
+  /** CEO / headcount from /api/profile when a ticker is selected (FMP). */
+  const [tickerProfileMeta, setTickerProfileMeta] = useState<{
+    ceo: string;
+    fullTimeEmployees: number | null;
+  } | null>(null);
   /** Ticker chart crosshair → metrics bar (fractional index along series). */
   const [chartHoverFrac, setChartHoverFrac]   = useState<number | null>(null);
 
@@ -1032,6 +1058,37 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
     return () => ac.abort();
   }, [activeTicker, timeFrame]);
 
+  useEffect(() => {
+    if (!activeTicker) {
+      setTickerProfileMeta(null);
+      return;
+    }
+    let cancelled = false;
+    setTickerProfileMeta(null);
+    fetch(`/api/profile/${activeTicker}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then((data: { ceo?: string; fullTimeEmployees?: number | null } | null) => {
+        if (cancelled) return;
+        if (!data) {
+          setTickerProfileMeta({ ceo: '', fullTimeEmployees: null });
+          return;
+        }
+        const raw = data.fullTimeEmployees;
+        const fullTimeEmployees =
+          typeof raw === 'number' && Number.isFinite(raw)
+            ? Math.round(raw)
+            : null;
+        setTickerProfileMeta({
+          ceo: String(data.ceo ?? '').trim(),
+          fullTimeEmployees,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setTickerProfileMeta({ ceo: '', fullTimeEmployees: null });
+      });
+    return () => { cancelled = true; };
+  }, [activeTicker]);
+
   const toggleIndicator = (ind: Indicator) =>
     setIndicators(prev => {
       const next = new Set(prev);
@@ -1063,10 +1120,14 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
         setSparklines(prev => ({ ...prev, ...sparks }));
       }
       if (pRes.ok) {
-        const { description } = await pRes.json() as { description: string };
-        if (description) {
+        const parsed = await pRes.json() as {
+          description?: string;
+          ceo?: string;
+          fullTimeEmployees?: number | null;
+        };
+        if (parsed.description) {
           setExtraTickers(prev =>
-            prev.map(t => t.symbol === sym ? { ...t, desc: description } : t),
+            prev.map(t => t.symbol === sym ? { ...t, desc: parsed.description! } : t),
           );
         }
       }
@@ -1081,7 +1142,13 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   }, []);
 
   // Live data for active ticker (falls back to static mock if live not yet loaded)
-  const liveT  = activeTicker ? (liveQuotes[activeTicker] ?? tickerData[activeTicker]) : null;
+  const tickerBlurb = useMemo(() => {
+    if (!activeTicker) return '';
+    const row = [...sector.tickers, ...extraTickers].find(t => t.symbol === activeTicker);
+    return row?.desc?.trim() ?? '';
+  }, [activeTicker, sector.tickers, extraTickers]);
+
+  const liveT = activeTicker ? (liveQuotes[activeTicker] ?? tickerData[activeTicker]) : null;
   const ticker = liveT;
 
   // Sector aggregate: compute from live quotes when available
@@ -1193,24 +1260,48 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
                 {sector.name}
               </span>
             </button>
-            {/* Ticker identity */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
+            {/* Ticker identity + optional description (above metrics) */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-2.5 min-w-0 flex-1">
                 {Icon && (
-                  <div className="p-1.5" style={{ backgroundColor: `${accentColor}14`, borderRadius: 3 }}>
+                  <div className="shrink-0 p-1.5 mt-0.5" style={{ backgroundColor: `${accentColor}14`, borderRadius: 3 }}>
                     <Icon color={accentColor} size={16} />
                   </div>
                 )}
-                <div>
-                  <span className="text-lg font-bold tracking-tight" style={{ color: RH.neon }}>
-                    {ticker.symbol}
-                  </span>
-                  <span className="ml-2 text-xs" style={{ color: RH.secondary }}>
-                    {ticker.name}
-                  </span>
+                <div
+                  className={
+                    tickerBlurb
+                      ? 'flex min-w-0 flex-1 items-start gap-x-3'
+                      : 'flex min-w-0 flex-1 flex-col gap-2'
+                  }
+                >
+                  <div className="w-max min-w-0 max-w-[min(28rem,58%)] shrink-0">
+                    <div className="text-lg font-bold tracking-tight leading-none" style={{ color: RH.neon }}>
+                      {ticker.symbol}
+                    </div>
+                    <div className="text-sm mt-1 font-medium leading-snug" style={{ color: RH.secondary }}>
+                      {ticker.name}
+                    </div>
+                  </div>
+                  {tickerBlurb ? (
+                    <div className="flex min-w-0 flex-1 flex-col gap-1.5 self-start">
+                      <p
+                        className="min-w-0 w-full self-start text-sm font-normal leading-relaxed line-clamp-3 break-words [text-wrap:pretty]"
+                        style={{ color: RH.snippet }}
+                      >
+                        {tickerBlurb}
+                      </p>
+                      {tickerProfileMeta !== null ? (
+                        <TickerProfileMetaDisplay meta={tickerProfileMeta} />
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {!tickerBlurb && tickerProfileMeta !== null ? (
+                    <TickerProfileMetaDisplay meta={tickerProfileMeta} />
+                  ) : null}
                 </div>
               </div>
-              <span className="text-[12px] font-mono" style={{ color: RH.muted }}>
+              <span className="text-[12px] font-mono shrink-0 mt-0.5" style={{ color: RH.muted }}>
                 {String(index + 1).padStart(2, '0')}
               </span>
             </div>

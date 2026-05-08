@@ -6,9 +6,17 @@ export async function GET(
   { params }: { params: Promise<{ symbol: string }> },
 ) {
   const { symbol } = await params;
+  const empty = () =>
+    NextResponse.json({
+      name: '',
+      description: '',
+      ceo: '',
+      fullTimeEmployees: null,
+    });
+
   try {
     const profile = await fetchProfile(symbol.toUpperCase());
-    if (!profile) return NextResponse.json({ description: '' });
+    if (!profile) return empty();
 
     // Trim description to ~200 chars at a sentence boundary for card display
     let desc = profile.description ?? '';
@@ -16,8 +24,13 @@ export async function GET(
       const cut = desc.lastIndexOf('.', 220);
       desc = cut > 80 ? desc.slice(0, cut + 1) : desc.slice(0, 220).trimEnd() + '…';
     }
-    return NextResponse.json({ name: profile.name, description: desc });
+    return NextResponse.json({
+      name: profile.name,
+      description: desc,
+      ceo: profile.ceo,
+      fullTimeEmployees: profile.fullTimeEmployees,
+    });
   } catch {
-    return NextResponse.json({ description: '' });
+    return empty();
   }
 }
