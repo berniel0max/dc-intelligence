@@ -1168,11 +1168,13 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
               </span>
             </div>
 
-            <DeltaMetricSm
-              label={timeFrame}
-              value={barPeriodPct !== null ? `${Math.abs(barPeriodPct).toFixed(1)}%` : '—'}
-              positive={barPeriodPct !== null ? barPeriodPct >= 0 : true}
-            />
+            <div className="shrink-0 mr-6">
+              <DeltaMetricSm
+                label={timeFrame}
+                value={barPeriodPct !== null ? `${Math.abs(barPeriodPct).toFixed(1)}%` : '—'}
+                positive={barPeriodPct !== null ? barPeriodPct >= 0 : true}
+              />
+            </div>
 
             <div className="flex flex-col gap-0.5 shrink-0">
               <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Mkt Cap</span>
