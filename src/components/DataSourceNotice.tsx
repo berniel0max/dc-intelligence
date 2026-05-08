@@ -8,16 +8,25 @@ import { useEffect, useState } from 'react';
  */
 export default function DataSourceNotice() {
   const [source, setSource] = useState<string | null>(null);
+  const [mockReason, setMockReason] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/quotes?symbols=AAPL', { cache: 'no-store' })
       .then(res => {
         setSource(res.headers.get('X-Data-Source') ?? (res.ok ? 'fmp-live' : 'error'));
+        setMockReason(res.headers.get('X-Mock-Reason'));
       })
       .catch(() => setSource('error'));
   }, []);
 
   if (source !== 'mock-fallback') return null;
+
+  const envHint =
+    mockReason === 'missing-env'
+      ? ' Vercel does not have this variable for Production yet — open your project → Settings → Environment Variables, add FMP_API_KEY for Production, save, then click Redeploy.'
+      : mockReason === 'fmp-error'
+        ? ' The key may be invalid or FMP returned an error — check Vercel → Deployments → your deployment → Functions / Logs for [/api/quotes].'
+        : '';
 
   return (
     <div
@@ -29,14 +38,18 @@ export default function DataSourceNotice() {
       }}
     >
       <span style={{ color: '#fbbf24', fontWeight: 600 }}>Demo data mode.</span>{' '}
-      Prices and some metrics are static placeholders, not live quotes. To use Financial Modeling Prep
-      on your deployment, add{' '}
-      <code className="text-[11px] px-1 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}>
-        FMP_API_KEY
-      </code>{' '}
-      under{' '}
-      <strong>Vercel → Project → Settings → Environment Variables</strong>, then redeploy (or trigger a new
-      production deployment).
+      Prices and some metrics are static placeholders, not live quotes.
+      {envHint || (
+        <>
+          {' '}
+          Add{' '}
+          <code className="text-[11px] px-1 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.35)' }}>
+            FMP_API_KEY
+          </code>{' '}
+          under <strong>Vercel → Project → Settings → Environment Variables</strong> for{' '}
+          <strong>Production</strong>, then <strong>Redeploy</strong>.
+        </>
+      )}
     </div>
   );
 }

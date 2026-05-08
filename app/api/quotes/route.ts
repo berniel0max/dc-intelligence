@@ -24,6 +24,17 @@ function periodChangesFromFmp(chg: FMPPriceChange | undefined): TickerData['peri
   };
 }
 
+function mockQuotesResponse(symbols: string[], mockReason: string) {
+  const fallback = symbols.map(sym => tickerData[sym]).filter(Boolean);
+  return Response.json(fallback, {
+    headers: {
+      'Cache-Control': 'no-store',
+      'X-Data-Source': 'mock-fallback',
+      'X-Mock-Reason': mockReason,
+    },
+  });
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const symbolsParam = searchParams.get('symbols');
@@ -32,6 +43,12 @@ export async function GET(request: Request) {
   }
 
   const symbols = symbolsParam.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+
+  const apiKeyRaw = process.env.FMP_API_KEY?.trim();
+  if (!apiKeyRaw || apiKeyRaw === 'your_api_key_here') {
+    console.warn('[/api/quotes] FMP_API_KEY is not set on the server (e.g. add it in Vercel env + redeploy)');
+    return mockQuotesResponse(symbols, 'missing-env');
+  }
 
   try {
     const quotes = await fetchQuotes(symbols);
@@ -80,14 +97,6 @@ export async function GET(request: Request) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[/api/quotes] FMP error (${msg.slice(0, 120)}) — returning available mock data`);
 
-    // Return mock data for known tickers; unknown tickers (e.g. manually added) return empty
-    const fallback = symbols.map(sym => tickerData[sym]).filter(Boolean);
-
-    return Response.json(fallback, {
-      headers: {
-        'Cache-Control': 'no-store',
-        'X-Data-Source': 'mock-fallback',
-      },
-    });
+    return mockQuotesResponse(symbols, 'fmp-error');
   }
 }
