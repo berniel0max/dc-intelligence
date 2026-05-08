@@ -1251,11 +1251,14 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
         {ticker ? (
           /* ── Ticker mode: all on one line ── */
           <>
-            {/* Fixed-width left cluster so hover price / % updates don’t shift Mkt Cap / PE / Debt */}
-            <div className="flex items-end gap-2 shrink-0 mr-12">
-              <div className="flex flex-col gap-0.5 shrink-0 min-w-[9rem]">
+            {/* Left cluster: fixed column widths + right-aligned price so % sits tight without shifting Mkt Cap */}
+            <div className="flex items-end gap-1 shrink-0 mr-12">
+              <div className="flex flex-col gap-0.5 shrink-0 w-[7rem]">
                 <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Price</span>
-                <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
+                <span
+                  className="text-[17px] font-bold tabular-nums leading-none block text-right"
+                  style={{ color: RH.text }}
+                >
                   {price}
                 </span>
               </div>
