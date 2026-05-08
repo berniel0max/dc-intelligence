@@ -1163,18 +1163,16 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
           <>
             <div className="flex flex-col gap-0.5 shrink-0">
               <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Price</span>
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
-                  {price}
-                </span>
-                <span
-                  className="text-[13px] font-semibold tabular-nums leading-none"
-                  style={{ color: daily >= 0 ? RH.green : RH.red }}
-                >
-                  {daily >= 0 ? '▲' : '▼'} {Math.abs(daily).toFixed(1)}%
-                </span>
-              </div>
+              <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
+                {price}
+              </span>
             </div>
+
+            <DeltaMetricSm
+              label={timeFrame}
+              value={barPeriodPct !== null ? `${Math.abs(barPeriodPct).toFixed(1)}%` : '—'}
+              positive={barPeriodPct !== null ? barPeriodPct >= 0 : true}
+            />
 
             <div className="flex flex-col gap-0.5 shrink-0">
               <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Mkt Cap</span>
@@ -1182,14 +1180,6 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
                 {cap}
               </span>
             </div>
-
-            <div className="w-px self-stretch shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
-
-            <DeltaMetricSm
-              label={timeFrame}
-              value={barPeriodPct !== null ? `${Math.abs(barPeriodPct).toFixed(1)}%` : '—'}
-              positive={barPeriodPct !== null ? barPeriodPct >= 0 : true}
-            />
 
             <div className="w-px self-stretch shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
 
