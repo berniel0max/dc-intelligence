@@ -1,4 +1,11 @@
-import { fetchQuotes, fetchPriceChanges, type FMPPriceChange } from '@/src/lib/fmp';
+import {
+  fetchQuotes,
+  fetchPriceChanges,
+  fetchRatiosTtm,
+  fetchKeyMetricsTtm,
+  ttmRatioTripleFromSources,
+  type FMPPriceChange,
+} from '@/src/lib/fmp';
 import { tickerData, type TickerData } from '@/src/data/tickerData';
 
 function fmtCap(dollars: number): string {
@@ -66,9 +73,25 @@ export async function GET(request: Request) {
 
     const changeMap = Object.fromEntries(changes.map(c => [c.symbol, c]));
 
+    const ratiosEntries = await Promise.all(
+      symbols.map(async sym => {
+        try {
+          const [ratiosRow, kmRow] = await Promise.all([
+            fetchRatiosTtm(sym),
+            fetchKeyMetricsTtm(sym),
+          ]);
+          return [sym, ttmRatioTripleFromSources(ratiosRow, kmRow)] as const;
+        } catch {
+          return [sym, ttmRatioTripleFromSources(null, null)] as const;
+        }
+      }),
+    );
+    const ratiosMap = Object.fromEntries(ratiosEntries);
+
     const result = quotes.map(q => {
       const chg  = changeMap[q.symbol];
       const mock = tickerData[q.symbol];           // fallback for fields not in free quote
+      const rat  = ratiosMap[q.symbol] ?? ttmRatioTripleFromSources(null, null);
 
       return {
         symbol:               q.symbol,
@@ -83,6 +106,12 @@ export async function GET(request: Request) {
         ttmPE:                mock?.ttmPE           ?? null,  // stable /quote no longer includes pe
         netDebt:              mock?.netDebt         ?? 'N/A',
         netDebtValue:         mock?.netDebtValue    ?? 0,
+        priceEarningsToGrowthRatio:
+          rat.priceEarningsToGrowthRatio ?? mock?.priceEarningsToGrowthRatio ?? null,
+        operatingProfitMargin:
+          rat.operatingProfitMargin ?? mock?.operatingProfitMargin ?? null,
+        returnOnEquity:
+          rat.returnOnEquity ?? mock?.returnOnEquity ?? null,
         periodChanges:        periodChangesFromFmp(chg),
       };
     });

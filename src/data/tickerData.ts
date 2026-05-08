@@ -11,6 +11,10 @@ export interface TickerData {
   ttmPE: number | null;       // trailing 12-month P/E (null = NM)
   netDebt: string;
   netDebtValue: number;       // positive = debt, negative = net cash
+  /** FMP /stable/ratios-ttm (when live); omitted from static mock rows */
+  priceEarningsToGrowthRatio?: number | null;
+  operatingProfitMargin?: number | null;
+  returnOnEquity?: number | null;
   /** FMP stock-price-change (when live); drives metrics bar period % to match data providers */
   periodChanges?: Partial<{
     '1D': number;

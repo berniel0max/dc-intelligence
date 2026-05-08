@@ -694,16 +694,16 @@ function TickerTable({
 
   // cols: ★ | sym | price | spark | mkt cap | pe | ytd | 1y | debt | remove
   const COLS = editAllowed
-    ? '22px 0.9fr 1fr 1.4fr 1.1fr 0.9fr 0.9fr 0.9fr 1.1fr 18px'
-    : '22px 0.9fr 1fr 1.4fr 1.1fr 0.9fr 0.9fr 0.9fr 1.1fr';
-  const GAP  = '0 8px';
+    ? '20px 0.9fr 1fr 1.35fr 1.05fr 0.88fr 0.88fr 0.88fr 1.05fr 16px'
+    : '20px 0.9fr 1fr 1.35fr 1.05fr 0.88fr 0.88fr 0.88fr 1.05fr';
+  const GAP  = '0 6px';
   const VAL  = 'text-[13px] font-mono tabular-nums leading-none';
 
   return (
     <div className="mx-5 mb-5 min-w-0 overflow-x-auto">
-      <div className="min-w-[720px]">
+      <div className="min-w-[688px]">
       {/* Header */}
-      <div className="grid items-center mb-0.5 px-2"
+      <div className="grid items-center mb-0.5 px-1.5"
         style={{ gridTemplateColumns: COLS, gap: GAP }}>
         <span className="text-[10px] text-center leading-none select-none" title="Favorite"
           style={{ color: RH.muted, opacity: 0.45 }}>★</span>
@@ -752,7 +752,7 @@ function TickerTable({
         return (
           <div key={sym}>
             <div
-              className="grid items-center px-2 py-[5px] cursor-pointer rounded"
+              className="grid items-center px-1.5 py-[5px] cursor-pointer rounded"
               style={{
                 gridTemplateColumns: COLS,
                 gap: GAP,
@@ -829,7 +829,7 @@ function TickerTable({
 
       {/* ── Add ticker row ──────────────────────────────── */}
       {editAllowed ? (
-      <div className="mt-1 px-2">
+      <div className="mt-1 px-1.5">
         {adding ? (
           <div className="flex items-center gap-2">
             <input
@@ -923,6 +923,18 @@ function fmtLiveCap(billions: number): string {
 
 function fmtEmployeeCount(n: number): string {
   return new Intl.NumberFormat('en-US').format(n);
+}
+
+function fmtBarPeg(v: number | null | undefined): string {
+  if (v == null || !Number.isFinite(v)) return 'NM';
+  return `${v.toFixed(2)}x`;
+}
+
+/** FMP TTM ratios use decimals (0.33 margin, 1.47 ROE); values already in % form are rare — cap heuristic at |v|≤10. */
+function fmtBarPctRatio(v: number | null | undefined): string {
+  if (v == null || !Number.isFinite(v)) return '—';
+  const pct = Math.abs(v) <= 10 ? v * 100 : v;
+  return `${pct.toFixed(1)}%`;
 }
 
 function TickerProfileMetaDisplay({
@@ -1217,6 +1229,9 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   const fpe     = ticker ? ticker.forwardPE   : health.forwardPE;
   const netDebt = ticker ? ticker.netDebt     : health.netDebt;
   const netDebtV = ticker ? ticker.netDebtValue : health.netDebtValue;
+  const pegRatio = ticker?.priceEarningsToGrowthRatio ?? null;
+  const opMargin = ticker?.operatingProfitMargin ?? null;
+  const roeRatio = ticker?.returnOnEquity ?? null;
   const price   = ticker
     ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
         chartHoverFrac !== null
@@ -1332,7 +1347,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
 
       {/* ── Metrics row ──────────────────────────────────── */}
       <div
-        className="mx-5 mb-4 px-4 py-2 flex items-end gap-2"
+        className="mx-5 mb-4 px-4 py-2 flex min-w-0 items-end gap-2 overflow-x-auto"
         style={{
           borderRadius: 3,
           backgroundColor: 'rgba(255,255,255,0.025)',
@@ -1343,7 +1358,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
           /* ── Ticker mode: all on one line ── */
           <>
             {/* Left cluster: fixed widths + small gap so % sits near price without shifting Mkt Cap */}
-            <div className="flex items-end gap-0 shrink-0 mr-12">
+            <div className="flex items-end gap-0 shrink-0 mr-10">
               <div className="flex flex-col gap-0.5 shrink-0 w-[6.5rem]">
                 <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Price</span>
                 <span
@@ -1371,6 +1386,9 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
 
             <MetricSm label="Fwd P/E"  value={fpe !== null ? `${fpe.toFixed(1)}x` : 'NM'} />
             <MetricSm label="Net Debt" value={netDebt} color={netDebtV < 0 ? RH.green : RH.secondary} />
+            <MetricSm label="PEG" value={fmtBarPeg(pegRatio)} />
+            <MetricSm label="OP MARGIN" value={fmtBarPctRatio(opMargin)} />
+            <MetricSm label="ROE" value={fmtBarPctRatio(roeRatio)} />
           </>
         ) : (
           /* ── Sector mode: Agg Cap left (large), rest inline ── */

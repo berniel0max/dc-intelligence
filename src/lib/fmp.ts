@@ -115,6 +115,66 @@ export async function fetchDailyHistory(
   return [...arr].reverse(); // stable returns newest-first → flip to oldest-first
 }
 
+/** Parse numeric fields from ratio endpoints (numbers or numeric strings). */
+export function parseFiniteNumber(v: unknown): number | null {
+  if (v == null || v === '') return null;
+  const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/,/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Trailing-twelve-month ratios — PEG, operating margin, ROE (metrics bar).
+ * Endpoint: /stable/ratios-ttm?symbol=
+ */
+export async function fetchRatiosTtm(symbol: string): Promise<Record<string, unknown> | null> {
+  const url = `${FMP_BASE}/ratios-ttm?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey()}`;
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const row = Array.isArray(data) ? data[0] : data;
+  return row && typeof row === 'object' ? (row as Record<string, unknown>) : null;
+}
+
+/** ROE and related metrics — /stable/key-metrics-ttm (ROE not on ratios-ttm). */
+export async function fetchKeyMetricsTtm(symbol: string): Promise<Record<string, unknown> | null> {
+  const url = `${FMP_BASE}/key-metrics-ttm?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey()}`;
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const row = Array.isArray(data) ? data[0] : data;
+  return row && typeof row === 'object' ? (row as Record<string, unknown>) : null;
+}
+
+/**
+ * Map FMP stable TTM payloads → metrics bar fields.
+ * Ratios use `*TTM` suffixes; ROE comes from key-metrics-ttm (`returnOnEquityTTM`).
+ */
+export function ttmRatioTripleFromSources(
+  ratios: Record<string, unknown> | null | undefined,
+  keyMetrics: Record<string, unknown> | null | undefined,
+): {
+  priceEarningsToGrowthRatio: number | null;
+  operatingProfitMargin: number | null;
+  returnOnEquity: number | null;
+} {
+  const peg =
+    parseFiniteNumber(ratios?.priceToEarningsGrowthRatioTTM) ??
+    parseFiniteNumber(ratios?.priceEarningsToGrowthRatio) ??
+    parseFiniteNumber(ratios?.priceEarningsGrowthRatio);
+  const opm =
+    parseFiniteNumber(ratios?.operatingProfitMarginTTM) ??
+    parseFiniteNumber(ratios?.operatingProfitMargin);
+  const roe =
+    parseFiniteNumber(keyMetrics?.returnOnEquityTTM) ??
+    parseFiniteNumber(ratios?.returnOnEquityTTM) ??
+    parseFiniteNumber(ratios?.returnOnEquity);
+  return {
+    priceEarningsToGrowthRatio: peg,
+    operatingProfitMargin:      opm,
+    returnOnEquity:             roe,
+  };
+}
+
 /**
  * Company profile — name, description, CEO, headcount.
  * Used to populate descriptions for manually added tickers and ticker detail header.
