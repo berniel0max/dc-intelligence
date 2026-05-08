@@ -1256,7 +1256,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
               <div className="flex flex-col gap-0.5 shrink-0 w-[7rem]">
                 <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Price</span>
                 <span
-                  className="text-[17px] font-bold tabular-nums leading-none block text-right"
+                  className="text-[17px] font-bold tabular-nums leading-none block"
                   style={{ color: RH.text }}
                 >
                   {price}
