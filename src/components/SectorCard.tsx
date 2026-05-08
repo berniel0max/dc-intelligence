@@ -5,6 +5,7 @@ import type { SectorHealth } from '@/src/data/sectorHealth';
 import { generateChartData, getXAxisLabels, TIME_FRAMES, type TimeFrame } from '@/src/data/chartData';
 import { SECTOR_ICONS } from '@/src/components/SectorIcon';
 import { tickerData, type TickerData } from '@/src/data/tickerData';
+import { loadFavoriteTickers, saveFavoriteTickers } from '@/src/lib/tickerFavorites';
 
 // ── Design tokens (Robinhood Legend) ─────────────────────────────────────────
 const RH = {
@@ -568,15 +569,39 @@ function TickerTable({
   const [inputError, setInputError] = useState('');
   const [capSort, setCapSort]       = useState<'desc' | 'asc' | null>(null);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [favorites, setFavorites]   = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    setFavorites(loadFavoriteTickers());
+  }, []);
+
+  const toggleFavorite = useCallback((sym: string) => {
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(sym)) next.delete(sym);
+      else next.add(sym);
+      saveFavoriteTickers(next);
+      return next;
+    });
+  }, []);
 
   const sortedTickers = useMemo(() => {
-    if (!capSort) return tickers;
+    const order = new Map(tickers.map((t, i) => [t.symbol, i]));
+    const cap = (sym: string) => (liveQuotes[sym] ?? tickerData[sym])?.marketCapValue ?? 0;
+
     return [...tickers].sort((a, b) => {
-      const capA = (liveQuotes[a.symbol] ?? tickerData[a.symbol])?.marketCapValue ?? 0;
-      const capB = (liveQuotes[b.symbol] ?? tickerData[b.symbol])?.marketCapValue ?? 0;
-      return capSort === 'desc' ? capB - capA : capA - capB;
+      const aF = favorites.has(a.symbol);
+      const bF = favorites.has(b.symbol);
+      if (aF !== bF) return aF ? -1 : 1;
+
+      if (capSort) {
+        const ca = cap(a.symbol);
+        const cb = cap(b.symbol);
+        if (ca !== cb) return capSort === 'desc' ? cb - ca : ca - cb;
+      }
+      return (order.get(a.symbol) ?? 0) - (order.get(b.symbol) ?? 0);
     });
-  }, [tickers, liveQuotes, capSort]);
+  }, [tickers, liveQuotes, capSort, favorites]);
 
   const handleCapSort = () =>
     setCapSort(prev => prev === 'desc' ? 'asc' : 'desc');
@@ -597,10 +622,10 @@ function TickerTable({
     if (e.key === 'Escape') { setAdding(false); setInputVal(''); setInputError(''); }
   };
 
-  // cols: sym | price | spark | mkt cap | pe | ytd | 1y | debt | remove
+  // cols: ★ | sym | price | spark | mkt cap | pe | ytd | 1y | debt | remove
   const COLS = editAllowed
-    ? '0.9fr 1fr 1.4fr 1.1fr 0.9fr 0.9fr 0.9fr 1.1fr 18px'
-    : '0.9fr 1fr 1.4fr 1.1fr 0.9fr 0.9fr 0.9fr 1.1fr';
+    ? '22px 0.9fr 1fr 1.4fr 1.1fr 0.9fr 0.9fr 0.9fr 1.1fr 18px'
+    : '22px 0.9fr 1fr 1.4fr 1.1fr 0.9fr 0.9fr 0.9fr 1.1fr';
   const GAP  = '0 8px';
   const VAL  = 'text-[13px] font-mono tabular-nums leading-none';
 
@@ -609,6 +634,8 @@ function TickerTable({
       {/* Header */}
       <div className="grid items-center mb-0.5 px-2"
         style={{ gridTemplateColumns: COLS, gap: GAP }}>
+        <span className="text-[10px] text-center leading-none select-none" title="Favorite"
+          style={{ color: RH.muted, opacity: 0.45 }}>★</span>
         <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>Sym</span>
         <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>Price</span>
         <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>7D</span>
@@ -666,6 +693,21 @@ function TickerTable({
               onMouseLeave={() => setHoveredRow(null)}
               onClick={() => onSelect(sym)}
             >
+              <button
+                type="button"
+                className="flex items-center justify-center p-0 border-0 bg-transparent cursor-pointer select-none"
+                style={{
+                  color:     favorites.has(sym) ? RH.neon : RH.muted,
+                  opacity:   favorites.has(sym) ? 1 : 0.38,
+                  lineHeight: 1,
+                }}
+                title={favorites.has(sym) ? `Unfavorite ${sym}` : `Favorite ${sym}`}
+                aria-pressed={favorites.has(sym)}
+                aria-label={favorites.has(sym) ? `Remove ${sym} from favorites` : `Add ${sym} to favorites`}
+                onClick={e => { e.stopPropagation(); toggleFavorite(sym); }}
+              >
+                <span className="text-[14px] leading-none">★</span>
+              </button>
               <span className="text-[13px] font-mono font-bold truncate"
                 style={{ color: isActive ? RH.neon : RH.text }}>
                 {sym}
