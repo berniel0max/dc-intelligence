@@ -199,12 +199,28 @@ function formatHoverDate(dateStr: string, tf?: TimeFrame): string {
   return `${mon} ${day}`;                                           // "May 7"
 }
 
-/** Period return from first valid chart point to `values[idx]` (for hover-aligned %). */
-function chartReturnToIndex(values: number[], idx: number): number | null {
-  if (values.length < 1 || idx < 0 || idx >= values.length) return null;
+/** Linearly interpolate series at fractional index f ∈ [0, n−1]. */
+function interpolateSeries(values: number[], f: number): number | null {
+  if (!values.length) return null;
+  const n = values.length;
+  if (n === 1) return values[0];
+  const f0 = Math.max(0, Math.min(n - 1, f));
+  const i0 = Math.floor(f0);
+  const i1 = Math.min(i0 + 1, n - 1);
+  const w = f0 - i0;
+  const a = values[i0], b = values[i1];
+  if (!isFinite(a) && !isFinite(b)) return null;
+  if (!isFinite(a)) return b;
+  if (!isFinite(b)) return a;
+  return a * (1 - w) + b * w;
+}
+
+/** Period return from first valid chart point to interpolated value at f. */
+function chartReturnToFraction(values: number[], f: number): number | null {
+  const y = interpolateSeries(values, f);
+  if (y === null || !isFinite(y)) return null;
   const first = values.find(v => isFinite(v) && v > 0) ?? values[0];
-  const y = values[idx];
-  if (!isFinite(first) || !isFinite(y) || first === 0) return null;
+  if (!isFinite(first) || first === 0) return null;
   return ((y - first) / first) * 100;
 }
 
@@ -217,16 +233,27 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
   indicators: Set<Indicator>;
   yFmt?: (v: number) => string;
   timeFrame?: TimeFrame;
-  /** Index into `values` at crosshair; null when not hovering. */
-  onHoverIndex?: (idx: number | null) => void;
+  /** Fractional index along `values` (0 … length−1); null when not hovering. Smooth vs stepped bars. */
+  onHoverIndex?: (frac: number | null) => void;
 }) {
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const [hoverFrac, setHoverFrac] = useState<number | null>(null);
   const fmt = yFmtProp ?? fmtY;
   const onHoverIndexRef = useRef(onHoverIndex);
   onHoverIndexRef.current = onHoverIndex;
+  const rafRef = useRef<number | null>(null);
+  const pendingHoverRef = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+  }, []);
 
   useEffect(() => {
-    setHoverIdx(null);
+    setHoverFrac(null);
+    pendingHoverRef.current = null;
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     onHoverIndexRef.current?.(null);
   }, [values]);
 
@@ -309,23 +336,34 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
     const rect = e.currentTarget.getBoundingClientRect();
     const relX  = (e.clientX - rect.left) / rect.width;
     const svgX  = relX * TW;
-    const idx   = Math.round((svgX - ML) / CW * (values.length - 1));
-    const clamped = Math.max(0, Math.min(values.length - 1, idx));
-    setHoverIdx(clamped);
-    onHoverIndexRef.current?.(clamped);
+    const t     = CW > 0 ? Math.max(0, Math.min(1, (svgX - ML) / CW)) : 0;
+    const f     = t * Math.max(values.length - 1, 0);
+    const frac  = values.length <= 1 ? 0 : Math.max(0, Math.min(values.length - 1, f));
+    setHoverFrac(frac);
+    pendingHoverRef.current = frac;
+
+    if (onHoverIndexRef.current && rafRef.current === null) {
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        onHoverIndexRef.current?.(pendingHoverRef.current);
+      });
+    }
   };
 
-  const hx    = hoverIdx !== null ? toX(hoverIdx) : null;
-  const hy    = hoverIdx !== null ? toY(values[hoverIdx]) : null;
-  const hVal  = hoverIdx !== null ? fmt(values[hoverIdx]) : null;
+  const yHover = hoverFrac !== null ? interpolateSeries(values, hoverFrac) : null;
+  const hx    = hoverFrac !== null && yHover !== null && isFinite(yHover) ? toX(hoverFrac) : null;
+  const hy    = hoverFrac !== null && yHover !== null && isFinite(yHover) ? toY(yHover) : null;
+  const hVal  = hoverFrac !== null && yHover !== null && isFinite(yHover) ? fmt(yHover) : null;
+  const iNear = hoverFrac !== null ? Math.round(hoverFrac) : -1;
   // Hover date: use raw date string when available for precise formatting per timeframe,
   // otherwise fall back to nearest non-empty label from the labels array
-  const hDate = hoverIdx !== null ? (() => {
-    if (dates?.[hoverIdx]) return formatHoverDate(dates[hoverIdx], timeFrame);
-    if (labels[hoverIdx]) return labels[hoverIdx];
+  const hDate = hoverFrac !== null && iNear >= 0 ? (() => {
+    const hi = Math.max(0, Math.min(values.length - 1, iNear));
+    if (dates?.[hi]) return formatHoverDate(dates[hi], timeFrame);
+    if (labels[hi]) return labels[hi];
     for (let d = 1; d < labels.length; d++) {
-      if (hoverIdx - d >= 0 && labels[hoverIdx - d]) return labels[hoverIdx - d];
-      if (hoverIdx + d < labels.length && labels[hoverIdx + d]) return labels[hoverIdx + d];
+      if (hi - d >= 0 && labels[hi - d]) return labels[hi - d];
+      if (hi + d < labels.length && labels[hi + d]) return labels[hi + d];
     }
     return '';
   })() : '';
@@ -391,7 +429,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
       <path d={linePath} fill="none" stroke={color} strokeWidth="1.5"
         strokeLinejoin="round" strokeLinecap="round" />
 
-      {hoverIdx === null && (
+      {hoverFrac === null && (
         <>
           <line x1={ML} y1={lastY} x2={TW - MR} y2={lastY}
             stroke={color} strokeWidth="0.4" strokeDasharray="2 3" opacity="0.3" />
@@ -465,14 +503,14 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
         <text key={i} x={x} y={svgH - 4} textAnchor="middle"
           fill={RH.chartAxis} fontSize="10.5"
           fontFamily="'Geist Mono','Courier New',monospace"
-          opacity={hoverIdx !== null ? 0 : 1}
+          opacity={hoverFrac !== null ? 0 : 1}
           style={{ transition: 'opacity 80ms' }}>
           {lbl}
         </text>
       ))}
 
       {/* ── Hover crosshair (spans all panels) ──────────── */}
-      {hoverIdx !== null && hx !== null && hy !== null && hVal !== null && (
+      {hoverFrac !== null && hx !== null && hy !== null && hVal !== null && (
         <g>
           {/* Solid thin tracking line */}
           <line x1={hx} y1={MT} x2={hx} y2={svgH - X_H}
@@ -490,8 +528,10 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
           </text>
 
           {/* RSI hover dot + value */}
-          {showRSI && isFinite(rsiData[hoverIdx]) && (() => {
-            const ry    = toRsiY(rsiData[hoverIdx]);
+          {showRSI && (() => {
+            const rsiV = hoverFrac !== null ? interpolateSeries(rsiData, hoverFrac) : null;
+            if (rsiV === null || !isFinite(rsiV)) return null;
+            const ry    = toRsiY(rsiV);
             const rpx   = Math.min(Math.max(hx - 18, ML), TW - MR - 36);
             const rpy   = rsiY0 + RSI_H - 14;
             return (
@@ -502,7 +542,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
                 <text x={rpx + 18} y={rpy + 9} textAnchor="middle"
                   fill="#a855f7" fontSize="10" fontWeight="600"
                   fontFamily="'Geist Mono','Courier New',monospace">
-                  {rsiData[hoverIdx].toFixed(1)}
+                  {rsiV.toFixed(1)}
                 </text>
               </>
             );
@@ -523,7 +563,15 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
       <rect x={ML} y={MT} width={CW} height={svgH - MT}
         fill="transparent" style={{ cursor: 'crosshair' }}
         onMouseMove={handleMouseMove}
-        onMouseLeave={() => { setHoverIdx(null); onHoverIndexRef.current?.(null); }}
+        onMouseLeave={() => {
+          setHoverFrac(null);
+          pendingHoverRef.current = null;
+          if (rafRef.current !== null) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+          }
+          onHoverIndexRef.current?.(null);
+        }}
       />
     </svg>
   );
@@ -897,17 +945,17 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   } | null>(null);
   const [histLoading, setHistLoading]   = useState(false);
   const [sparklines, setSparklines]     = useState<Record<string, number[]>>({});
-  /** Ticker chart crosshair → metrics bar price & timeframe % (null = latest quote / bar values). */
-  const [chartHoverIdx, setChartHoverIdx]   = useState<number | null>(null);
+  /** Ticker chart crosshair → metrics bar (fractional index along series). */
+  const [chartHoverFrac, setChartHoverFrac]   = useState<number | null>(null);
 
   const allTickers = [...sector.tickers, ...extraTickers].filter(t => !removedTickers.has(t.symbol));
 
   useEffect(() => {
-    setChartHoverIdx(null);
+    setChartHoverFrac(null);
   }, [activeTicker, timeFrame]);
 
-  const onChartHoverIndex = useCallback((idx: number | null) => {
-    setChartHoverIdx(idx);
+  const onChartHoverFraction = useCallback((frac: number | null) => {
+    setChartHoverFrac(frac);
   }, []);
 
   // ── Fetch live quotes for this sector's tickers (5-min polling) ──────────────
@@ -1085,12 +1133,12 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   }, [ticker, activeTicker, liveQuotes, timeFrame, chartPeriodReturn]);
 
   const barPeriodDisplay = useMemo(() => {
-    if (chartHoverIdx !== null && ticker && chartVals.length > 0) {
-      const p = chartReturnToIndex(chartVals, chartHoverIdx);
+    if (chartHoverFrac !== null && ticker && chartVals.length > 0) {
+      const p = chartReturnToFraction(chartVals, chartHoverFrac);
       if (p !== null && Number.isFinite(p)) return p;
     }
     return barPeriodPct;
-  }, [chartHoverIdx, chartVals, ticker, barPeriodPct]);
+  }, [chartHoverFrac, chartVals, ticker, barPeriodPct]);
 
   const cap     = ticker
     ? ticker.marketCap
@@ -1104,8 +1152,8 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   const netDebtV = ticker ? ticker.netDebtValue : health.netDebtValue;
   const price   = ticker
     ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-        chartHoverIdx !== null && Number.isFinite(chartVals[chartHoverIdx])
-          ? chartVals[chartHoverIdx]
+        chartHoverFrac !== null
+          ? (interpolateSeries(chartVals, chartHoverFrac) ?? ticker.price)
           : ticker.price,
       )
     : null;
@@ -1274,7 +1322,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
           indicators={indicators}
           yFmt={chartYFmt}
           timeFrame={timeFrame}
-          onHoverIndex={ticker ? onChartHoverIndex : undefined}
+          onHoverIndex={ticker ? onChartHoverFraction : undefined}
         />
       </div>
 
