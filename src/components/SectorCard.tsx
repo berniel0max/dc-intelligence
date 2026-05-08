@@ -1206,8 +1206,6 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
               </span>
             </div>
 
-            <div className="w-px self-stretch shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
-
             <MetricSm label="Fwd P/E"  value={fpe !== null ? `${fpe.toFixed(1)}x` : 'NM'} />
             <MetricSm label="Net Debt" value={netDebt} color={netDebtV < 0 ? RH.green : RH.secondary} />
           </>
