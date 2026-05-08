@@ -199,7 +199,16 @@ function formatHoverDate(dateStr: string, tf?: TimeFrame): string {
   return `${mon} ${day}`;                                           // "May 7"
 }
 
-function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtProp, timeFrame, onHoverY }: {
+/** Period return from first valid chart point to `values[idx]` (for hover-aligned %). */
+function chartReturnToIndex(values: number[], idx: number): number | null {
+  if (values.length < 1 || idx < 0 || idx >= values.length) return null;
+  const first = values.find(v => isFinite(v) && v > 0) ?? values[0];
+  const y = values[idx];
+  if (!isFinite(first) || !isFinite(y) || first === 0) return null;
+  return ((y - first) / first) * 100;
+}
+
+function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtProp, timeFrame, onHoverIndex }: {
   values: number[];
   labels: string[];
   dates?: string[];   // raw ISO strings for precise hover date formatting
@@ -208,17 +217,17 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
   indicators: Set<Indicator>;
   yFmt?: (v: number) => string;
   timeFrame?: TimeFrame;
-  /** Raw Y value at crosshair (share price or $B cap); null when not hovering. */
-  onHoverY?: (y: number | null) => void;
+  /** Index into `values` at crosshair; null when not hovering. */
+  onHoverIndex?: (idx: number | null) => void;
 }) {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const fmt = yFmtProp ?? fmtY;
-  const onHoverYRef = useRef(onHoverY);
-  onHoverYRef.current = onHoverY;
+  const onHoverIndexRef = useRef(onHoverIndex);
+  onHoverIndexRef.current = onHoverIndex;
 
   useEffect(() => {
     setHoverIdx(null);
-    onHoverYRef.current?.(null);
+    onHoverIndexRef.current?.(null);
   }, [values]);
 
   if (!values.length) return null;
@@ -303,7 +312,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
     const idx   = Math.round((svgX - ML) / CW * (values.length - 1));
     const clamped = Math.max(0, Math.min(values.length - 1, idx));
     setHoverIdx(clamped);
-    onHoverYRef.current?.(values[clamped]);
+    onHoverIndexRef.current?.(clamped);
   };
 
   const hx    = hoverIdx !== null ? toX(hoverIdx) : null;
@@ -514,7 +523,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
       <rect x={ML} y={MT} width={CW} height={svgH - MT}
         fill="transparent" style={{ cursor: 'crosshair' }}
         onMouseMove={handleMouseMove}
-        onMouseLeave={() => { setHoverIdx(null); onHoverYRef.current?.(null); }}
+        onMouseLeave={() => { setHoverIdx(null); onHoverIndexRef.current?.(null); }}
       />
     </svg>
   );
@@ -888,17 +897,17 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   } | null>(null);
   const [histLoading, setHistLoading]   = useState(false);
   const [sparklines, setSparklines]     = useState<Record<string, number[]>>({});
-  /** Ticker chart crosshair → metrics bar price (null = latest quote). */
-  const [chartHoverY, setChartHoverY]   = useState<number | null>(null);
+  /** Ticker chart crosshair → metrics bar price & timeframe % (null = latest quote / bar values). */
+  const [chartHoverIdx, setChartHoverIdx]   = useState<number | null>(null);
 
   const allTickers = [...sector.tickers, ...extraTickers].filter(t => !removedTickers.has(t.symbol));
 
   useEffect(() => {
-    setChartHoverY(null);
+    setChartHoverIdx(null);
   }, [activeTicker, timeFrame]);
 
-  const onChartHoverY = useCallback((y: number | null) => {
-    setChartHoverY(y);
+  const onChartHoverIndex = useCallback((idx: number | null) => {
+    setChartHoverIdx(idx);
   }, []);
 
   // ── Fetch live quotes for this sector's tickers (5-min polling) ──────────────
@@ -1075,6 +1084,14 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
     return periodPercentForBar(q, timeFrame, chartPeriodReturn);
   }, [ticker, activeTicker, liveQuotes, timeFrame, chartPeriodReturn]);
 
+  const barPeriodDisplay = useMemo(() => {
+    if (chartHoverIdx !== null && ticker && chartVals.length > 0) {
+      const p = chartReturnToIndex(chartVals, chartHoverIdx);
+      if (p !== null && Number.isFinite(p)) return p;
+    }
+    return barPeriodPct;
+  }, [chartHoverIdx, chartVals, ticker, barPeriodPct]);
+
   const cap     = ticker
     ? ticker.marketCap
     : hasLive
@@ -1087,7 +1104,9 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   const netDebtV = ticker ? ticker.netDebtValue : health.netDebtValue;
   const price   = ticker
     ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
-        chartHoverY !== null && Number.isFinite(chartHoverY) ? chartHoverY : ticker.price,
+        chartHoverIdx !== null && Number.isFinite(chartVals[chartHoverIdx])
+          ? chartVals[chartHoverIdx]
+          : ticker.price,
       )
     : null;
 
@@ -1194,8 +1213,8 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
             <div className="shrink-0 mr-6">
               <DeltaMetricSm
                 label={timeFrame}
-                value={barPeriodPct !== null ? `${Math.abs(barPeriodPct).toFixed(1)}%` : '—'}
-                positive={barPeriodPct !== null ? barPeriodPct >= 0 : true}
+                value={barPeriodDisplay !== null ? `${Math.abs(barPeriodDisplay).toFixed(1)}%` : '—'}
+                positive={barPeriodDisplay !== null ? barPeriodDisplay >= 0 : true}
               />
             </div>
 
@@ -1255,7 +1274,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
           indicators={indicators}
           yFmt={chartYFmt}
           timeFrame={timeFrame}
-          onHoverY={ticker ? onChartHoverY : undefined}
+          onHoverIndex={ticker ? onChartHoverIndex : undefined}
         />
       </div>
 
