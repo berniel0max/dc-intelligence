@@ -630,7 +630,8 @@ function TickerTable({
   const VAL  = 'text-[13px] font-mono tabular-nums leading-none';
 
   return (
-    <div className="mx-5 mb-5">
+    <div className="mx-5 mb-5 min-w-0 overflow-x-auto">
+      <div className="min-w-[720px]">
       {/* Header */}
       <div className="grid items-center mb-0.5 px-2"
         style={{ gridTemplateColumns: COLS, gap: GAP }}>
@@ -819,6 +820,7 @@ function TickerTable({
         )}
       </div>
       ) : null}
+      </div>
     </div>
   );
 }
@@ -1078,7 +1080,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
 
   return (
     <div
-      className="flex flex-col overflow-hidden"
+      className="flex flex-col min-w-0"
       style={{
         backgroundColor: RH.card,
         border: `1px solid ${ticker ? RH.borderActive : RH.border}`,
@@ -1211,7 +1213,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
       </div>
 
       {/* ── Chart ────────────────────────────────────────── */}
-      <div className="mx-5 overflow-hidden relative" style={{ backgroundColor: RH.chartBg, borderRadius: 2 }}>
+      <div className="mx-5 min-w-0 overflow-hidden relative" style={{ backgroundColor: RH.chartBg, borderRadius: 2 }}>
         {/* Loading shimmer overlay */}
         {histLoading && (
           <div className="absolute inset-0 flex items-center justify-center"

@@ -91,7 +91,8 @@ function defaultHealth(id: string): SectorHealth {
 }
 
 function gridCols(count: number) {
-  if (count === 1) return 'grid-cols-1 max-w-md mx-auto';
+  // Single sector: use full row width so chart + wide ticker grid are layout_width not clipped (max-w-md was ~448px).
+  if (count === 1) return 'grid-cols-1 w-full min-w-0';
   if (count === 3) return 'grid-cols-1 sm:grid-cols-3';
   return 'grid-cols-1 sm:grid-cols-2';
 }
@@ -350,6 +351,7 @@ export default function SupplyChainMap({ editAllowed }: { editAllowed: boolean }
                 return (
                   <div
                     key={sectorId}
+                    className="min-w-0"
                     draggable={canEditLayout}
                     onDragStart={canEditLayout ? e => { e.stopPropagation(); setDragSrc({ layerId: layer.id, sectorId }); } : undefined}
                     onDragOver={canEditLayout && dragSrc?.layerId === layer.id && dragSrc.sectorId !== sectorId
