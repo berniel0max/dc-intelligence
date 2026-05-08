@@ -544,9 +544,9 @@ function TickerTable({
     if (e.key === 'Escape') { setAdding(false); setInputVal(''); setInputError(''); }
   };
 
-  // cols: sym 36 | price 46 | spark 68 | cap 38 | pe 36 | ytd 44 | 1y 44 | debt 40 | remove 14
-  const COLS = '36px 46px 68px 38px 36px 44px 44px 40px 14px';
-  const GAP  = '0 3px';
+  // cols: sym | price | spark | mkt cap | pe | ytd | 1y | debt | remove
+  const COLS = '0.9fr 1fr 1.4fr 1.1fr 0.9fr 0.9fr 0.9fr 1.1fr 18px';
+  const GAP  = '0 8px';
   const VAL  = 'text-[13px] font-mono tabular-nums leading-none';
 
   return (
@@ -599,7 +599,7 @@ function TickerTable({
         return (
           <div key={sym}>
             <div
-              className="grid items-center px-2 py-[3px] cursor-pointer rounded"
+              className="grid items-center px-2 py-[5px] cursor-pointer rounded"
               style={{
                 gridTemplateColumns: COLS,
                 gap: GAP,
