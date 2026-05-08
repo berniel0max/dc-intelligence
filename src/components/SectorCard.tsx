@@ -22,6 +22,55 @@ const RH = {
   chartAxis:    '#444444',
 } as const;
 
+/**
+ * Metrics-bar % should match FMP / broker convention (split-adjusted, calendar periods).
+ * Chart first→last can drift (series start, gaps). Fall back to chart for 1W / All.
+ */
+function periodPercentForBar(
+  q: TickerData | null | undefined,
+  tf: TimeFrame,
+  chartFallback: number | null,
+): number | null {
+  if (!q) return chartFallback;
+  const pc = q.periodChanges;
+  const pick = (v: number | undefined | null): number | null =>
+    v != null && Number.isFinite(v) ? v : null;
+
+  if (pc) {
+    switch (tf) {
+      case '1D':
+        return pick(pc['1D']) ?? pick(q.dailyChangePercent);
+      case '1W':
+        break;
+      case '1M':
+        return pick(pc['1M']);
+      case '3M':
+        return pick(pc['3M']);
+      case 'YTD':
+        return pick(pc.ytd) ?? pick(q.ytdChangePercent);
+      case '1Y':
+        return pick(pc['1Y']) ?? pick(q.ttmChangePercent);
+      case '5Y':
+        return pick(pc['5Y']);
+      case 'All':
+        break;
+      default:
+        break;
+    }
+  }
+  switch (tf) {
+    case 'YTD':
+      return pick(q.ytdChangePercent) ?? chartFallback;
+    case '1Y':
+      return pick(q.ttmChangePercent) ?? chartFallback;
+    case '1D':
+      return pick(q.dailyChangePercent) ?? chartFallback;
+    default:
+      break;
+  }
+  return chartFallback;
+}
+
 interface TickerEntry {
   symbol: string;
   desc: string;
@@ -928,18 +977,28 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
   const useLiveChart     = Boolean(activeTicker && historyMatchesTf && !histLoading);
   const chartId    = ticker ? `ticker-${ticker.symbol}` : sector.id;
   const chartValue = ticker ? ticker.marketCapValue     : health.currentMarketCapValue;
-  const chartVals  = useLiveChart ? liveHistory.values : generateChartData(chartId, chartValue, timeFrame);
-  const chartLbls  = useLiveChart ? liveHistory.labels : getXAxisLabels(timeFrame, chartVals.length);
+  const chartVals  = useLiveChart && liveHistory
+    ? liveHistory.values
+    : generateChartData(chartId, chartValue, timeFrame);
+  const chartLbls  = useLiveChart && liveHistory
+    ? liveHistory.labels
+    : getXAxisLabels(timeFrame, chartVals.length);
   const chartYFmt  = useLiveChart ? fmtPrice : undefined;  // undefined → default $B formatter
 
-  // Period return derived from chart data — always consistent with what the chart shows
-  const periodReturn = useMemo(() => {
+  // Chart-implied change (first→last bar) — used when FMP has no field (1W, All)
+  const chartPeriodReturn = useMemo(() => {
     if (!ticker || chartVals.length < 2) return null;
     const first = chartVals.find(v => isFinite(v) && v > 0);
     const last  = chartVals[chartVals.length - 1];
     if (!first || !isFinite(last)) return null;
     return ((last - first) / first) * 100;
   }, [ticker, chartVals]);
+
+  const barPeriodPct = useMemo(() => {
+    if (!ticker || !activeTicker) return null;
+    const q = liveQuotes[activeTicker] ?? tickerData[activeTicker];
+    return periodPercentForBar(q, timeFrame, chartPeriodReturn);
+  }, [ticker, activeTicker, liveQuotes, timeFrame, chartPeriodReturn]);
 
   const cap     = ticker
     ? ticker.marketCap
@@ -1067,8 +1126,8 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
             <DeltaMetricSm label="Daily" value={`${Math.abs(daily).toFixed(1)}%`} positive={daily >= 0} />
             <DeltaMetricSm
               label={timeFrame}
-              value={periodReturn !== null ? `${Math.abs(periodReturn).toFixed(1)}%` : '—'}
-              positive={periodReturn !== null ? periodReturn >= 0 : true}
+              value={barPeriodPct !== null ? `${Math.abs(barPeriodPct).toFixed(1)}%` : '—'}
+              positive={barPeriodPct !== null ? barPeriodPct >= 0 : true}
             />
 
             <div className="w-px self-stretch shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
@@ -1110,7 +1169,7 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
         )}
         <LineChart
           values={chartVals} labels={chartLbls}
-          dates={useLiveChart ? liveHistory.dates : undefined}
+          dates={useLiveChart && liveHistory ? liveHistory.dates : undefined}
           color={accentColor} id={chartId}
           indicators={indicators}
           yFmt={chartYFmt}

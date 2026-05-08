@@ -11,6 +11,18 @@ export interface TickerData {
   ttmPE: number | null;       // trailing 12-month P/E (null = NM)
   netDebt: string;
   netDebtValue: number;       // positive = debt, negative = net cash
+  /** FMP stock-price-change (when live); drives metrics bar period % to match data providers */
+  periodChanges?: Partial<{
+    '1D': number;
+    '5D': number;
+    '1M': number;
+    '3M': number;
+    '6M': number;
+    ytd: number;
+    '1Y': number;
+    '3Y': number;
+    '5Y': number;
+  }>;
 }
 
 export const tickerData: Record<string, TickerData> = {

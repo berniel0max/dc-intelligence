@@ -1,5 +1,5 @@
-import { fetchQuotes, fetchPriceChanges } from '@/src/lib/fmp';
-import { tickerData } from '@/src/data/tickerData';
+import { fetchQuotes, fetchPriceChanges, type FMPPriceChange } from '@/src/lib/fmp';
+import { tickerData, type TickerData } from '@/src/data/tickerData';
 
 function fmtCap(dollars: number): string {
   const b = dollars / 1e9;
@@ -7,6 +7,21 @@ function fmtCap(dollars: number): string {
   if (b >= 100)  return `$${b.toFixed(0)}B`;
   if (b >= 1)    return `$${b.toFixed(1)}B`;
   return `$${(dollars / 1e6).toFixed(0)}M`;
+}
+
+function periodChangesFromFmp(chg: FMPPriceChange | undefined): TickerData['periodChanges'] {
+  if (!chg) return undefined;
+  return {
+    '1D': chg['1D'],
+    '5D': chg['5D'],
+    '1M': chg['1M'],
+    '3M': chg['3M'],
+    '6M': chg['6M'],
+    ytd:  chg.ytd,
+    '1Y': chg['1Y'],
+    '3Y': chg['3Y'],
+    '5Y': chg['5Y'],
+  };
 }
 
 export async function GET(request: Request) {
@@ -44,6 +59,7 @@ export async function GET(request: Request) {
         ttmPE:                mock?.ttmPE           ?? null,  // stable /quote no longer includes pe
         netDebt:              mock?.netDebt         ?? 'N/A',
         netDebtValue:         mock?.netDebtValue    ?? 0,
+        periodChanges:        periodChangesFromFmp(chg),
       };
     });
 
