@@ -131,7 +131,7 @@ function InlineInput({ placeholder, value, onChange, onKeyDown, autoFocus, dim }
 
 // ── Main component ────────────────────────────────────────────────────────
 
-export default function SupplyChainMap() {
+export default function SupplyChainMap({ editAllowed }: { editAllowed: boolean }) {
   // Initialise from seed; hydrate from localStorage after mount
   const [layout, setLayout]     = useState<LayoutState>(buildSeed);
   const [hydrated, setHydrated] = useState(false);
@@ -154,6 +154,19 @@ export default function SupplyChainMap() {
   const [addingLayer, setAddingLayer]       = useState(false);
   const [newLayerLabel, setNewLayerLabel]   = useState('');
   const [newLayerSub, setNewLayerSub]       = useState('');
+
+  // If server revokes edit access, exit layout-edit UI
+  useEffect(() => {
+    if (!editAllowed) {
+      setEditMode(false);
+      setAddingTo(null);
+      setNewName('');
+      setNewDesc('');
+      setAddingLayer(false);
+      setNewLayerLabel('');
+      setNewLayerSub('');
+    }
+  }, [editAllowed]);
 
   // ── Hydrate from localStorage once ─────────────────────────────────────
   useEffect(() => {
@@ -251,6 +264,8 @@ export default function SupplyChainMap() {
   function cancelAddSector() { setAddingTo(null); setNewName(''); setNewDesc(''); }
   function cancelAddLayer()  { setAddingLayer(false); setNewLayerLabel(''); setNewLayerSub(''); }
 
+  const canEditLayout = editAllowed && editMode;
+
   // ── Render ──────────────────────────────────────────────────────────────
 
   let globalIndex = 0;
@@ -258,20 +273,22 @@ export default function SupplyChainMap() {
   return (
     <div className="w-full space-y-1">
 
-      {/* Edit toggle */}
-      <div className="flex justify-end mb-1">
-        <button
-          onClick={() => { setEditMode(m => !m); cancelAddSector(); cancelAddLayer(); }}
-          className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded"
-          style={{
-            color:           editMode ? C.neon : C.muted,
-            border:          `1px solid ${editMode ? '#b1ff5640' : C.border}`,
-            backgroundColor: editMode ? '#b1ff5608' : 'transparent',
-          }}
-        >
-          {editMode ? 'Done' : 'Edit layout'}
-        </button>
-      </div>
+      {/* Edit toggle — only when server allows (see EDIT_ACCESS_SECRET + /unlock) */}
+      {editAllowed ? (
+        <div className="flex justify-end mb-1">
+          <button
+            onClick={() => { setEditMode(m => !m); cancelAddSector(); cancelAddLayer(); }}
+            className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded"
+            style={{
+              color:           editMode ? C.neon : C.muted,
+              border:          `1px solid ${editMode ? '#b1ff5640' : C.border}`,
+              backgroundColor: editMode ? '#b1ff5608' : 'transparent',
+            }}
+          >
+            {editMode ? 'Done' : 'Edit layout'}
+          </button>
+        </div>
+      ) : null}
 
       {layout.layers.map((layer, layerIdx) => {
         const layerStart       = globalIndex;
@@ -282,12 +299,12 @@ export default function SupplyChainMap() {
         return (
           <div
             key={layer.id}
-            draggable={editMode}
-            onDragStart={editMode ? e => { e.stopPropagation(); setDragLayerSrc(layer.id); } : undefined}
-            onDragOver={editMode && dragLayerSrc && dragLayerSrc !== layer.id
+            draggable={canEditLayout}
+            onDragStart={canEditLayout ? e => { e.stopPropagation(); setDragLayerSrc(layer.id); } : undefined}
+            onDragOver={canEditLayout && dragLayerSrc && dragLayerSrc !== layer.id
               ? e => { e.preventDefault(); setDragLayerOver(layer.id); }
               : undefined}
-            onDrop={editMode && dragLayerSrc
+            onDrop={canEditLayout && dragLayerSrc
               ? e => { e.preventDefault(); reorderLayers(dragLayerSrc, layer.id); setDragLayerSrc(null); setDragLayerOver(null); }
               : undefined}
             onDragEnd={() => { setDragLayerSrc(null); setDragLayerOver(null); }}
@@ -300,7 +317,7 @@ export default function SupplyChainMap() {
           >
             {/* Layer header */}
             <div className="flex items-center gap-2 mb-4 mt-8 first:mt-0">
-              {editMode && (
+              {canEditLayout && (
                 <span
                   className="cursor-grab select-none shrink-0"
                   style={{ color: '#666', fontSize: 14, lineHeight: 1 }}
@@ -311,7 +328,7 @@ export default function SupplyChainMap() {
                 {layer.label}
               </span>
               <div className="flex-1 h-px" style={{ backgroundColor: C.border }} />
-              {editMode && (
+              {canEditLayout && (
                 <button
                   onClick={() => removeLayer(layer.id)}
                   className="shrink-0 text-[11px] px-1.5 py-0.5 rounded leading-none"
@@ -333,12 +350,12 @@ export default function SupplyChainMap() {
                 return (
                   <div
                     key={sectorId}
-                    draggable={editMode}
-                    onDragStart={editMode ? e => { e.stopPropagation(); setDragSrc({ layerId: layer.id, sectorId }); } : undefined}
-                    onDragOver={editMode && dragSrc?.layerId === layer.id && dragSrc.sectorId !== sectorId
+                    draggable={canEditLayout}
+                    onDragStart={canEditLayout ? e => { e.stopPropagation(); setDragSrc({ layerId: layer.id, sectorId }); } : undefined}
+                    onDragOver={canEditLayout && dragSrc?.layerId === layer.id && dragSrc.sectorId !== sectorId
                       ? e => { e.preventDefault(); setDragOver(sectorId); }
                       : undefined}
-                    onDrop={editMode && dragSrc?.layerId === layer.id
+                    onDrop={canEditLayout && dragSrc?.layerId === layer.id
                       ? e => { e.preventDefault(); reorderSectors(layer.id, dragSrc.sectorId, sectorId); setDragSrc(null); setDragOver(null); }
                       : undefined}
                     onDragEnd={() => { setDragSrc(null); setDragOver(null); }}
@@ -351,7 +368,7 @@ export default function SupplyChainMap() {
                     }}
                   >
                     {/* Edit-mode card overlay controls */}
-                    {editMode && (
+                    {canEditLayout && (
                       <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 20, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span
                           className="cursor-grab select-none"
@@ -372,6 +389,7 @@ export default function SupplyChainMap() {
                       health={health}
                       accentColor={color}
                       index={layerStart + cardIdx}
+                      editAllowed={editAllowed}
                     />
                   </div>
                 );
@@ -379,7 +397,7 @@ export default function SupplyChainMap() {
             </div>
 
             {/* Add sector — below the grid */}
-            {editMode && (
+            {canEditLayout && (
               <div className="mt-3">
                 {addingTo === layer.id ? (
                   <div
@@ -431,7 +449,7 @@ export default function SupplyChainMap() {
       })}
 
       {/* Add layer */}
-      {editMode && (
+      {canEditLayout && (
         <div className="mt-6">
           {addingLayer ? (
             <div

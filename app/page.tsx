@@ -1,8 +1,13 @@
+import { cookies } from 'next/headers';
 import SupplyChainMap from '@/src/components/SupplyChainMap';
 import IndustryOverview from '@/src/components/IndustryOverview';
 import DataSourceNotice from '@/src/components/DataSourceNotice';
+import { EDIT_COOKIE_NAME, verifyEditSession } from '@/src/lib/editAuth';
 
-export default function Home() {
+export default async function Home() {
+  const jar = await cookies();
+  const editAllowed = verifyEditSession(jar.get(EDIT_COOKIE_NAME)?.value);
+
   return (
     <main className="min-h-screen px-6 py-10 sm:px-12" style={{ backgroundColor: '#0a0a0a' }}>
       <div className="max-w-[1400px] mx-auto">
@@ -27,7 +32,7 @@ export default function Home() {
 
         <DataSourceNotice />
         <IndustryOverview />
-        <SupplyChainMap />
+        <SupplyChainMap editAllowed={editAllowed} />
 
         <footer className="mt-12 pt-5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           <p className="text-xs text-center" style={{ color: '#333' }}>

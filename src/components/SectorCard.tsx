@@ -88,6 +88,8 @@ interface SectorCardProps {
   health: SectorHealth;
   accentColor: string;
   index: number;
+  /** When false, hide add/remove ticker (set from server via EDIT_ACCESS_SECRET session). */
+  editAllowed: boolean;
 }
 
 // ── Indicator types & math helpers ──────────────────────────────────────────
@@ -548,6 +550,7 @@ function TickerTable({
   onTogglePE,
   onAdd,
   onRemove,
+  editAllowed,
 }: {
   tickers: TickerEntry[];
   activeTicker: string | null;
@@ -558,6 +561,7 @@ function TickerTable({
   onTogglePE: () => void;
   onAdd: (sym: string) => void;
   onRemove: (sym: string) => void;
+  editAllowed: boolean;
 }) {
   const [adding, setAdding]         = useState(false);
   const [inputVal, setInputVal]     = useState('');
@@ -594,7 +598,9 @@ function TickerTable({
   };
 
   // cols: sym | price | spark | mkt cap | pe | ytd | 1y | debt | remove
-  const COLS = '0.9fr 1fr 1.4fr 1.1fr 0.9fr 0.9fr 0.9fr 1.1fr 18px';
+  const COLS = editAllowed
+    ? '0.9fr 1fr 1.4fr 1.1fr 0.9fr 0.9fr 0.9fr 1.1fr 18px'
+    : '0.9fr 1fr 1.4fr 1.1fr 0.9fr 0.9fr 0.9fr 1.1fr';
   const GAP  = '0 8px';
   const VAL  = 'text-[13px] font-mono tabular-nums leading-none';
 
@@ -632,7 +638,7 @@ function TickerTable({
         <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>YTD</span>
         <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>1Y</span>
         <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>Debt</span>
-        <span />
+        {editAllowed ? <span /> : null}
       </div>
 
       {/* Divider */}
@@ -688,19 +694,21 @@ function TickerTable({
                 style={{ color: t && t.netDebtValue < 0 ? RH.green : RH.secondary }}>
                 {t ? t.netDebt : '—'}
               </span>
-              <button
-                onClick={e => { e.stopPropagation(); onRemove(sym); }}
-                style={{
-                  opacity: hoveredRow === sym ? 0.5 : 0,
-                  transition: 'opacity 120ms',
-                  color: RH.muted,
-                  lineHeight: 1,
-                  padding: 0,
-                  cursor: 'pointer',
-                  fontSize: 12,
-                }}
-                title={`Remove ${sym}`}
-              >✕</button>
+              {editAllowed ? (
+                <button
+                  onClick={e => { e.stopPropagation(); onRemove(sym); }}
+                  style={{
+                    opacity: hoveredRow === sym ? 0.5 : 0,
+                    transition: 'opacity 120ms',
+                    color: RH.muted,
+                    lineHeight: 1,
+                    padding: 0,
+                    cursor: 'pointer',
+                    fontSize: 12,
+                  }}
+                  title={`Remove ${sym}`}
+                >✕</button>
+              ) : null}
             </div>
 
             {isActive && desc && (
@@ -714,6 +722,7 @@ function TickerTable({
       })}
 
       {/* ── Add ticker row ──────────────────────────────── */}
+      {editAllowed ? (
       <div className="mt-1 px-2">
         {adding ? (
           <div className="flex items-center gap-2">
@@ -767,6 +776,7 @@ function TickerTable({
           </button>
         )}
       </div>
+      ) : null}
     </div>
   );
 }
@@ -804,7 +814,7 @@ function fmtLiveCap(billions: number): string {
   return `$${(billions * 1000).toFixed(0)}M`;
 }
 
-export default function SectorCard({ sector, health, accentColor, index }: SectorCardProps) {
+export default function SectorCard({ sector, health, accentColor, index, editAllowed }: SectorCardProps) {
   const [timeFrame, setTimeFrame]       = useState<TimeFrame>('3M');
   const [activeTicker, setActiveTicker] = useState<string | null>(null);
   const [peMode, setPeMode]             = useState<PeMode>('fwd');
@@ -1247,6 +1257,7 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
         onTogglePE={() => setPeMode(m => m === 'fwd' ? 'ttm' : 'fwd')}
         onAdd={handleAddTicker}
         onRemove={handleRemoveTicker}
+        editAllowed={editAllowed}
       />
     </div>
   );
