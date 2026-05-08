@@ -91,8 +91,9 @@ function defaultHealth(id: string): SectorHealth {
 }
 
 function gridCols(count: number) {
-  // Single sector: use full row width so chart + wide ticker grid are layout_width not clipped (max-w-md was ~448px).
-  if (count === 1) return 'grid-cols-1 w-full min-w-0';
+  // Single sector: ~half of page shell (max-w-[1400px]) so it matches scale of other sections, not full-bleed.
+  if (count === 1)
+    return 'grid-cols-1 w-full min-w-0 justify-items-center [&>*]:w-full [&>*]:max-w-[700px] [&>*]:min-w-0 [&>*]:mx-auto';
   if (count === 3) return 'grid-cols-1 sm:grid-cols-3';
   return 'grid-cols-1 sm:grid-cols-2';
 }
