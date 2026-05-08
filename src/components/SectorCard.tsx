@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { SectorHealth } from '@/src/data/sectorHealth';
 import { generateChartData, getXAxisLabels, TIME_FRAMES, type TimeFrame } from '@/src/data/chartData';
 import { SECTOR_ICONS } from '@/src/components/SectorIcon';
@@ -199,7 +199,7 @@ function formatHoverDate(dateStr: string, tf?: TimeFrame): string {
   return `${mon} ${day}`;                                           // "May 7"
 }
 
-function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtProp, timeFrame }: {
+function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtProp, timeFrame, onHoverY }: {
   values: number[];
   labels: string[];
   dates?: string[];   // raw ISO strings for precise hover date formatting
@@ -208,9 +208,18 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
   indicators: Set<Indicator>;
   yFmt?: (v: number) => string;
   timeFrame?: TimeFrame;
+  /** Raw Y value at crosshair (share price or $B cap); null when not hovering. */
+  onHoverY?: (y: number | null) => void;
 }) {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const fmt = yFmtProp ?? fmtY;
+  const onHoverYRef = useRef(onHoverY);
+  onHoverYRef.current = onHoverY;
+
+  useEffect(() => {
+    setHoverIdx(null);
+    onHoverYRef.current?.(null);
+  }, [values]);
 
   if (!values.length) return null;
 
@@ -292,7 +301,9 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
     const relX  = (e.clientX - rect.left) / rect.width;
     const svgX  = relX * TW;
     const idx   = Math.round((svgX - ML) / CW * (values.length - 1));
-    setHoverIdx(Math.max(0, Math.min(values.length - 1, idx)));
+    const clamped = Math.max(0, Math.min(values.length - 1, idx));
+    setHoverIdx(clamped);
+    onHoverYRef.current?.(values[clamped]);
   };
 
   const hx    = hoverIdx !== null ? toX(hoverIdx) : null;
@@ -503,7 +514,7 @@ function LineChart({ values, labels, dates, color, id, indicators, yFmt: yFmtPro
       <rect x={ML} y={MT} width={CW} height={svgH - MT}
         fill="transparent" style={{ cursor: 'crosshair' }}
         onMouseMove={handleMouseMove}
-        onMouseLeave={() => setHoverIdx(null)}
+        onMouseLeave={() => { setHoverIdx(null); onHoverYRef.current?.(null); }}
       />
     </svg>
   );
@@ -877,8 +888,18 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   } | null>(null);
   const [histLoading, setHistLoading]   = useState(false);
   const [sparklines, setSparklines]     = useState<Record<string, number[]>>({});
+  /** Ticker chart crosshair → metrics bar price (null = latest quote). */
+  const [chartHoverY, setChartHoverY]   = useState<number | null>(null);
 
   const allTickers = [...sector.tickers, ...extraTickers].filter(t => !removedTickers.has(t.symbol));
+
+  useEffect(() => {
+    setChartHoverY(null);
+  }, [activeTicker, timeFrame]);
+
+  const onChartHoverY = useCallback((y: number | null) => {
+    setChartHoverY(y);
+  }, []);
 
   // ── Fetch live quotes for this sector's tickers (5-min polling) ──────────────
   const loadQuotes = useCallback(async () => {
@@ -1065,7 +1086,9 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   const netDebt = ticker ? ticker.netDebt     : health.netDebt;
   const netDebtV = ticker ? ticker.netDebtValue : health.netDebtValue;
   const price   = ticker
-    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(ticker.price)
+    ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+        chartHoverY !== null && Number.isFinite(chartHoverY) ? chartHoverY : ticker.price,
+      )
     : null;
 
   // Last updated display
@@ -1234,6 +1257,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
           indicators={indicators}
           yFmt={chartYFmt}
           timeFrame={timeFrame}
+          onHoverY={ticker ? onChartHoverY : undefined}
         />
       </div>
 
