@@ -1251,9 +1251,9 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
         {ticker ? (
           /* ── Ticker mode: all on one line ── */
           <>
-            {/* Left cluster: fixed column widths + right-aligned price so % sits tight without shifting Mkt Cap */}
-            <div className="flex items-end gap-1 shrink-0 mr-12">
-              <div className="flex flex-col gap-0.5 shrink-0 w-[7rem]">
+            {/* Left cluster: fixed widths + small gap so % sits near price without shifting Mkt Cap */}
+            <div className="flex items-end gap-0 shrink-0 mr-12">
+              <div className="flex flex-col gap-0.5 shrink-0 w-[6.5rem]">
                 <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Price</span>
                 <span
                   className="text-[17px] font-bold tabular-nums leading-none block"
