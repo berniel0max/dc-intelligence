@@ -904,6 +904,15 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
   const chartLbls  = useLiveChart ? liveHistory.labels : getXAxisLabels(timeFrame, chartVals.length);
   const chartYFmt  = useLiveChart ? fmtPrice : undefined;  // undefined → default $B formatter
 
+  // Period return derived from chart data — always consistent with what the chart shows
+  const periodReturn = useMemo(() => {
+    if (!ticker || chartVals.length < 2) return null;
+    const first = chartVals.find(v => isFinite(v) && v > 0);
+    const last  = chartVals[chartVals.length - 1];
+    if (!first || !isFinite(last)) return null;
+    return ((last - first) / first) * 100;
+  }, [ticker, chartVals]);
+
   const cap     = ticker
     ? ticker.marketCap
     : hasLive
@@ -1027,8 +1036,12 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
 
             <div className="w-px self-stretch shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
 
-            <DeltaMetricSm label="Daily" value={`${Math.abs(daily).toFixed(1)}%`}  positive={daily >= 0} />
-            <DeltaMetricSm label="YTD"   value={`${Math.abs(ytd).toFixed(1)}%`}    positive={ytd >= 0} />
+            <DeltaMetricSm label="Daily" value={`${Math.abs(daily).toFixed(1)}%`} positive={daily >= 0} />
+            <DeltaMetricSm
+              label={timeFrame}
+              value={periodReturn !== null ? `${Math.abs(periodReturn).toFixed(1)}%` : '—'}
+              positive={periodReturn !== null ? periodReturn >= 0 : true}
+            />
 
             <div className="w-px self-stretch shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
 
