@@ -34,11 +34,18 @@ export async function GET(request: Request) {
   const symbols = symbolsParam.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
 
   try {
-    // Two FMP calls: batch quote + batch price-change
-    const [quotes, changes] = await Promise.all([
-      fetchQuotes(symbols),
-      fetchPriceChanges(symbols),
-    ]);
+    const quotes = await fetchQuotes(symbols);
+    if (!quotes.length) {
+      throw new Error('FMP returned no quote data (check API key and symbol list)');
+    }
+
+    let changes: FMPPriceChange[] = [];
+    try {
+      changes = await fetchPriceChanges(symbols);
+    } catch (chgErr) {
+      const m = chgErr instanceof Error ? chgErr.message : String(chgErr);
+      console.warn(`[/api/quotes] stock-price-change failed (${m.slice(0, 100)}) — using static YTD/1Y where needed`);
+    }
 
     const changeMap = Object.fromEntries(changes.map(c => [c.symbol, c]));
 
@@ -64,7 +71,10 @@ export async function GET(request: Request) {
     });
 
     return Response.json(result, {
-      headers: { 'Cache-Control': 'no-store' },
+      headers: {
+        'Cache-Control': 'no-store',
+        'X-Data-Source': 'fmp-live',
+      },
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -74,7 +84,10 @@ export async function GET(request: Request) {
     const fallback = symbols.map(sym => tickerData[sym]).filter(Boolean);
 
     return Response.json(fallback, {
-      headers: { 'X-Data-Source': 'mock-fallback' },
+      headers: {
+        'Cache-Control': 'no-store',
+        'X-Data-Source': 'mock-fallback',
+      },
     });
   }
 }

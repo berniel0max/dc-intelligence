@@ -1,5 +1,6 @@
 import SupplyChainMap from '@/src/components/SupplyChainMap';
 import IndustryOverview from '@/src/components/IndustryOverview';
+import DataSourceNotice from '@/src/components/DataSourceNotice';
 
 export default function Home() {
   return (
@@ -24,6 +25,7 @@ export default function Home() {
           </p>
         </header>
 
+        <DataSourceNotice />
         <IndustryOverview />
         <SupplyChainMap />
 
