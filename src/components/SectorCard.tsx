@@ -766,7 +766,12 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
   // ── Live data state ──────────────────────────────────────────────────────────
   const [liveQuotes, setLiveQuotes]     = useState<Record<string, TickerData>>({});
   const [quotesTs, setQuotesTs]         = useState<Date | null>(null);
-  const [liveHistory, setLiveHistory]   = useState<{ values: number[]; labels: string[]; dates: string[] } | null>(null);
+  const [liveHistory, setLiveHistory]   = useState<{
+    tf: TimeFrame;
+    values: number[];
+    labels: string[];
+    dates: string[];
+  } | null>(null);
   const [histLoading, setHistLoading]   = useState(false);
   const [sparklines, setSparklines]     = useState<Record<string, number[]>>({});
 
@@ -813,16 +818,37 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
 
   // ── Fetch real price history when a ticker is selected or timeframe changes ──
   useEffect(() => {
-    if (!activeTicker) { setLiveHistory(null); return; }
+    if (!activeTicker) {
+      setLiveHistory(null);
+      setHistLoading(false);
+      return;
+    }
+    const ac = new AbortController();
+    const tf = timeFrame;
     setHistLoading(true);
-    fetch(`/api/history/${activeTicker}?tf=${timeFrame}`)
-      .then(r => r.ok ? r.json() : null)
+    fetch(`/api/history/${activeTicker}?tf=${tf}`, { signal: ac.signal })
+      .then(r => (r.ok ? r.json() : Promise.resolve(null)))
       .then(data => {
-        if (data?.values?.length) setLiveHistory(data);
-        else setLiveHistory(null);
+        if (ac.signal.aborted) return;
+        if (data?.values?.length) {
+          setLiveHistory({
+            tf,
+            values: data.values,
+            labels: data.labels,
+            dates: data.dates ?? [],
+          });
+        } else {
+          setLiveHistory(null);
+        }
       })
-      .catch(() => setLiveHistory(null))
-      .finally(() => setHistLoading(false));
+      .catch(err => {
+        if ((err as Error).name === 'AbortError') return;
+        setLiveHistory(null);
+      })
+      .finally(() => {
+        if (!ac.signal.aborted) setHistLoading(false);
+      });
+    return () => ac.abort();
   }, [activeTicker, timeFrame]);
 
   const toggleIndicator = (ind: Indicator) =>
@@ -896,8 +922,10 @@ export default function SectorCard({ sector, health, accentColor, index }: Secto
       : null;
   }, [liveQuotes, allTickers]);
 
-  // Chart: use real price history for active ticker; mock market-cap data for sector
-  const useLiveChart = activeTicker && liveHistory && !histLoading;
+  // Chart: only use fetched data when it matches the selected TF — avoids one frame (or more)
+  // of stale prices after the user switches timeframes (effect runs after paint).
+  const historyMatchesTf = Boolean(liveHistory && liveHistory.tf === timeFrame);
+  const useLiveChart     = Boolean(activeTicker && historyMatchesTf && !histLoading);
   const chartId    = ticker ? `ticker-${ticker.symbol}` : sector.id;
   const chartValue = ticker ? ticker.marketCapValue     : health.currentMarketCapValue;
   const chartVals  = useLiveChart ? liveHistory.values : generateChartData(chartId, chartValue, timeFrame);
