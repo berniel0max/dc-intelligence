@@ -983,6 +983,12 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
     ceo: string;
     fullTimeEmployees: number | null;
   } | null>(null);
+  /** PEG / op margin / ROE from /api/metrics-ttm (avoids heavy bulk FMP on quote poll). */
+  const [barTtmMetrics, setBarTtmMetrics] = useState<{
+    priceEarningsToGrowthRatio: number | null;
+    operatingProfitMargin: number | null;
+    returnOnEquity: number | null;
+  } | null>(null);
   /** Ticker chart crosshair → metrics bar (fractional index along series). */
   const [chartHoverFrac, setChartHoverFrac]   = useState<number | null>(null);
 
@@ -1098,6 +1104,33 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
       .catch(() => {
         if (!cancelled) setTickerProfileMeta({ ceo: '', fullTimeEmployees: null });
       });
+    return () => { cancelled = true; };
+  }, [activeTicker]);
+
+  useEffect(() => {
+    if (!activeTicker) {
+      setBarTtmMetrics(null);
+      return;
+    }
+    let cancelled = false;
+    setBarTtmMetrics(null);
+    fetch(`/api/metrics-ttm/${activeTicker}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then((
+        data: {
+          priceEarningsToGrowthRatio?: number | null;
+          operatingProfitMargin?: number | null;
+          returnOnEquity?: number | null;
+        } | null,
+      ) => {
+        if (cancelled || !data) return;
+        setBarTtmMetrics({
+          priceEarningsToGrowthRatio: data.priceEarningsToGrowthRatio ?? null,
+          operatingProfitMargin:      data.operatingProfitMargin ?? null,
+          returnOnEquity:             data.returnOnEquity ?? null,
+        });
+      })
+      .catch(() => { if (!cancelled) setBarTtmMetrics(null); });
     return () => { cancelled = true; };
   }, [activeTicker]);
 
@@ -1229,9 +1262,11 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   const fpe     = ticker ? ticker.forwardPE   : health.forwardPE;
   const netDebt = ticker ? ticker.netDebt     : health.netDebt;
   const netDebtV = ticker ? ticker.netDebtValue : health.netDebtValue;
-  const pegRatio = ticker?.priceEarningsToGrowthRatio ?? null;
-  const opMargin = ticker?.operatingProfitMargin ?? null;
-  const roeRatio = ticker?.returnOnEquity ?? null;
+  const pegRatio = barTtmMetrics?.priceEarningsToGrowthRatio
+    ?? ticker?.priceEarningsToGrowthRatio
+    ?? null;
+  const opMargin = barTtmMetrics?.operatingProfitMargin ?? ticker?.operatingProfitMargin ?? null;
+  const roeRatio   = barTtmMetrics?.returnOnEquity ?? ticker?.returnOnEquity ?? null;
   const price   = ticker
     ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
         chartHoverFrac !== null
