@@ -56,7 +56,8 @@ export default function UnlockPage() {
           <h1 className="text-lg font-semibold text-white tracking-tight">Edit access</h1>
           <p className="text-sm" style={{ color: '#888' }}>
             Edit lock is off (no <code className="text-[13px]" style={{ color: '#aaa' }}>EDIT_ACCESS_SECRET</code> in
-            server env). Layout and ticker edits are available to everyone until you set that variable and redeploy.
+            server env). Ticker edits (add/remove rows per sector) are available to everyone until you set that variable
+            and redeploy.
           </p>
           <Link href="/" className="inline-block text-sm" style={{ color: '#b1ff56' }}>
             ← Back to app
@@ -72,7 +73,7 @@ export default function UnlockPage() {
         <div>
           <h1 className="text-lg font-semibold text-white tracking-tight">Edit access</h1>
           <p className="text-sm mt-2" style={{ color: '#666' }}>
-            Enter the owner secret to enable layout and ticker edits in this browser. Requires{' '}
+            Enter the owner secret to enable ticker edits (add/remove tickers per sector) in this browser. Requires{' '}
             <code className="text-[13px]" style={{ color: '#888' }}>EDIT_ACCESS_SECRET</code> on
             the server (e.g. Vercel).
           </p>

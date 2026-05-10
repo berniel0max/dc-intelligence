@@ -1,6 +1,11 @@
 /**
  * Server-side FMP (Financial Modeling Prep) API client.
- * Uses the new /stable/ endpoints (v3 is legacy, blocked for accounts created after Aug 2025).
+ *
+ * Official stable API base (per https://site.financialmodelingprep.com/developer/docs/stable):
+ *   `https://financialmodelingprep.com/stable/...`
+ * Data calls return 403 on `site.financialmodelingprep.com` — use `financialmodelingprep.com` only.
+ *
+ * v3 `/api/v3/...` is legacy; many new accounts cannot use it — stay on `/stable/`.
  * Never import this in client components — use the /api/* routes instead.
  */
 
@@ -122,27 +127,44 @@ export function parseFiniteNumber(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** First present finite number among raw endpoint fields (same key may differ by plan / schema). */
+function firstNumber(...raw: unknown[]): number | null {
+  for (const v of raw) {
+    const n = parseFiniteNumber(v);
+    if (n != null) return n;
+  }
+  return null;
+}
+
 /**
  * Trailing-twelve-month ratios — PEG, operating margin, ROE (metrics bar).
  * Endpoint: /stable/ratios-ttm?symbol=
  */
 export async function fetchRatiosTtm(symbol: string): Promise<Record<string, unknown> | null> {
-  const url = `${FMP_BASE}/ratios-ttm?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey()}`;
-  const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) return null;
-  const data = await res.json();
-  const row = Array.isArray(data) ? data[0] : data;
-  return row && typeof row === 'object' ? (row as Record<string, unknown>) : null;
+  try {
+    const url = `${FMP_BASE}/ratios-ttm?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey()}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data: unknown = await res.json();
+    const row = Array.isArray(data) ? data[0] : data;
+    return row && typeof row === 'object' ? (row as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
 }
 
 /** ROE and related metrics — /stable/key-metrics-ttm (ROE not on ratios-ttm). */
 export async function fetchKeyMetricsTtm(symbol: string): Promise<Record<string, unknown> | null> {
-  const url = `${FMP_BASE}/key-metrics-ttm?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey()}`;
-  const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) return null;
-  const data = await res.json();
-  const row = Array.isArray(data) ? data[0] : data;
-  return row && typeof row === 'object' ? (row as Record<string, unknown>) : null;
+  try {
+    const url = `${FMP_BASE}/key-metrics-ttm?symbol=${encodeURIComponent(symbol)}&apikey=${apiKey()}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const data: unknown = await res.json();
+    const row = Array.isArray(data) ? data[0] : data;
+    return row && typeof row === 'object' ? (row as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -157,22 +179,61 @@ export function ttmRatioTripleFromSources(
   operatingProfitMargin: number | null;
   returnOnEquity: number | null;
 } {
-  const peg =
-    parseFiniteNumber(ratios?.priceToEarningsGrowthRatioTTM) ??
-    parseFiniteNumber(ratios?.priceEarningsToGrowthRatio) ??
-    parseFiniteNumber(ratios?.priceEarningsGrowthRatio);
-  const opm =
-    parseFiniteNumber(ratios?.operatingProfitMarginTTM) ??
-    parseFiniteNumber(ratios?.operatingProfitMargin);
-  const roe =
-    parseFiniteNumber(keyMetrics?.returnOnEquityTTM) ??
-    parseFiniteNumber(ratios?.returnOnEquityTTM) ??
-    parseFiniteNumber(ratios?.returnOnEquity);
+  const peg = firstNumber(
+    ratios?.priceToEarningsGrowthRatioTTM,
+    ratios?.priceEarningsToGrowthRatioTTM,
+    ratios?.priceEarningsToGrowthRatio,
+    ratios?.priceEarningsGrowthRatio,
+  );
+  /** Operating margin: stable ratios-ttm uses operatingProfitMarginTTM; fall back to EBIT margin or snake_case. */
+  const opm = firstNumber(
+    ratios?.operatingProfitMarginTTM,
+    ratios?.operatingProfitMargin,
+    ratios?.operating_profit_margin_ttm,
+    ratios?.ebitMarginTTM,
+    ratios?.continuousOperationsProfitMarginTTM,
+    ratios?.pretaxProfitMarginTTM,
+  );
+  /** ROE: on stable, ratios-ttm often omits ROE; key-metrics-ttm has returnOnEquityTTM. */
+  const roe = firstNumber(
+    keyMetrics?.returnOnEquityTTM,
+    keyMetrics?.returnOnEquity,
+    keyMetrics?.roeTTM,
+    keyMetrics?.return_on_equity_ttm,
+    ratios?.returnOnEquityTTM,
+    ratios?.returnOnEquity,
+    ratios?.return_on_equity_ttm,
+  );
   return {
     priceEarningsToGrowthRatio: peg,
     operatingProfitMargin:      opm,
     returnOnEquity:             roe,
   };
+}
+
+export type TtmRatioTriple = ReturnType<typeof ttmRatioTripleFromSources>;
+
+export function emptyTtmRatioTriple(): TtmRatioTriple {
+  return {
+    priceEarningsToGrowthRatio: null,
+    operatingProfitMargin:      null,
+    returnOnEquity:             null,
+  };
+}
+
+/** Load PEG / operating margin / ROE from FMP (two TTM endpoints). Never throws; returns nulls on failure. */
+export async function loadTtmRatioTriple(symbol: string): Promise<TtmRatioTriple> {
+  const sym = symbol.trim().toUpperCase();
+  if (!sym) return emptyTtmRatioTriple();
+  try {
+    const [ratiosRow, kmRow] = await Promise.all([
+      fetchRatiosTtm(sym),
+      fetchKeyMetricsTtm(sym),
+    ]);
+    return ttmRatioTripleFromSources(ratiosRow, kmRow);
+  } catch {
+    return emptyTtmRatioTriple();
+  }
 }
 
 /**

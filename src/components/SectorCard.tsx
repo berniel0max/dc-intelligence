@@ -892,9 +892,9 @@ function TickerTable({
 
 function MetricSm({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <div className="flex flex-col gap-0.5 shrink-0">
-      <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>{label}</span>
-      <span className="text-[12px] font-semibold tabular-nums leading-none"
+    <div className="flex flex-col gap-1 shrink-0 min-w-[3.25rem]">
+      <span className="text-[11px] uppercase tracking-wide" style={{ color: RH.muted }}>{label}</span>
+      <span className="text-[13px] font-semibold tabular-nums leading-none"
         style={{ color: color ?? RH.secondary }}>{value}</span>
     </div>
   );
@@ -902,13 +902,24 @@ function MetricSm({ label, value, color }: { label: string; value: string; color
 
 function DeltaMetricSm({ label, value, positive }: { label: string; value: string; positive: boolean }) {
   return (
-    <div className="flex flex-col gap-0.5 shrink-0">
-      <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>{label}</span>
-      <span className="text-[12px] font-semibold tabular-nums leading-none"
+    <div className="flex flex-col gap-1 shrink-0">
+      <span className="text-[11px] uppercase tracking-wide" style={{ color: RH.muted }}>{label}</span>
+      <span className="text-[13px] font-semibold tabular-nums leading-none"
         style={{ color: positive ? RH.green : RH.red }}>
         {positive ? '▲' : '▼'} {value}
       </span>
     </div>
+  );
+}
+
+/** Thin vertical rule between metric groups in the ticker metrics bar. */
+function MetricsBarDivider() {
+  return (
+    <div
+      className="w-px h-8 shrink-0 self-end mb-0.5 mx-0.5"
+      style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
+      aria-hidden
+    />
   );
 }
 
@@ -925,15 +936,24 @@ function fmtEmployeeCount(n: number): string {
   return new Intl.NumberFormat('en-US').format(n);
 }
 
+/** Coerce JSON / loosely-typed quote fields to finite numbers (strings break `Number.isFinite`). */
+function coerceFinite(v: unknown): number | null {
+  if (v == null || v === '') return null;
+  const n = typeof v === 'number' ? v : parseFloat(String(v).replace(/,/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
 function fmtBarPeg(v: number | null | undefined): string {
-  if (v == null || !Number.isFinite(v)) return 'NM';
-  return `${v.toFixed(2)}x`;
+  const n = coerceFinite(v);
+  if (n == null) return 'NM';
+  return `${n.toFixed(2)}x`;
 }
 
 /** FMP TTM ratios use decimals (0.33 margin, 1.47 ROE); values already in % form are rare — cap heuristic at |v|≤10. */
-function fmtBarPctRatio(v: number | null | undefined): string {
-  if (v == null || !Number.isFinite(v)) return '—';
-  const pct = Math.abs(v) <= 10 ? v * 100 : v;
+function fmtBarPctRatio(v: unknown): string {
+  const n = coerceFinite(v);
+  if (n == null) return '—';
+  const pct = Math.abs(n) <= 10 ? n * 100 : n;
   return `${pct.toFixed(1)}%`;
 }
 
@@ -983,16 +1003,15 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
     ceo: string;
     fullTimeEmployees: number | null;
   } | null>(null);
-  /** PEG / op margin / ROE from /api/metrics-ttm (avoids heavy bulk FMP on quote poll). */
-  const [barTtmMetrics, setBarTtmMetrics] = useState<{
-    priceEarningsToGrowthRatio: number | null;
-    operatingProfitMargin: number | null;
-    returnOnEquity: number | null;
-  } | null>(null);
   /** Ticker chart crosshair → metrics bar (fractional index along series). */
   const [chartHoverFrac, setChartHoverFrac]   = useState<number | null>(null);
 
   const allTickers = [...sector.tickers, ...extraTickers].filter(t => !removedTickers.has(t.symbol));
+  /** Stable fingerprint so quote/sparkline loaders refresh when rows are removed (not only when `extraTickers.length` changes). */
+  const quoteSymbolKey = useMemo(
+    () => allTickers.map(t => t.symbol).sort().join(','),
+    [sector.tickers, extraTickers, removedTickers],
+  );
 
   useEffect(() => {
     setChartHoverFrac(null);
@@ -1008,14 +1027,19 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
     try {
       const res  = await fetch(`/api/quotes?symbols=${syms}`);
       const data = await res.json() as TickerData[];
-      setLiveQuotes(Object.fromEntries(data.map(d => [d.symbol, d])));
+      setLiveQuotes(
+        Object.fromEntries(
+          data.map(d => {
+            const sym = String(d.symbol ?? '').toUpperCase();
+            return [sym, { ...d, symbol: sym }] as const;
+          }),
+        ),
+      );
       setQuotesTs(new Date());
     } catch {
       // Silently fall back to mock data already in state
     }
-  // Re-fetch when the ticker list changes (sector switch or manually added ticker)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sector.id, extraTickers.length]);
+  }, [quoteSymbolKey, sector.id]);
 
   useEffect(() => {
     loadQuotes();
@@ -1032,8 +1056,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
     } catch {
       // Keep existing (mock fallback in MiniSparkline)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sector.id, extraTickers.length]);
+  }, [quoteSymbolKey, sector.id]);
 
   useEffect(() => {
     loadSparklines();
@@ -1104,33 +1127,6 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
       .catch(() => {
         if (!cancelled) setTickerProfileMeta({ ceo: '', fullTimeEmployees: null });
       });
-    return () => { cancelled = true; };
-  }, [activeTicker]);
-
-  useEffect(() => {
-    if (!activeTicker) {
-      setBarTtmMetrics(null);
-      return;
-    }
-    let cancelled = false;
-    setBarTtmMetrics(null);
-    fetch(`/api/metrics-ttm/${activeTicker}`)
-      .then(r => (r.ok ? r.json() : null))
-      .then((
-        data: {
-          priceEarningsToGrowthRatio?: number | null;
-          operatingProfitMargin?: number | null;
-          returnOnEquity?: number | null;
-        } | null,
-      ) => {
-        if (cancelled || !data) return;
-        setBarTtmMetrics({
-          priceEarningsToGrowthRatio: data.priceEarningsToGrowthRatio ?? null,
-          operatingProfitMargin:      data.operatingProfitMargin ?? null,
-          returnOnEquity:             data.returnOnEquity ?? null,
-        });
-      })
-      .catch(() => { if (!cancelled) setBarTtmMetrics(null); });
     return () => { cancelled = true; };
   }, [activeTicker]);
 
@@ -1221,12 +1217,18 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   const useLiveChart     = Boolean(activeTicker && historyMatchesTf && !histLoading);
   const chartId      = ticker ? `ticker-${ticker.symbol}` : sector.id;
   const chartValue   = ticker ? ticker.price : health.currentMarketCapValue;
-  const chartVals  = useLiveChart && liveHistory
+  /** Stable reference when not using live history — avoids LineChart `useEffect([values])` firing every parent render. */
+  const syntheticChartVals = useMemo(
+    () => generateChartData(chartId, chartValue, timeFrame),
+    [chartId, chartValue, timeFrame],
+  );
+  const chartVals = useLiveChart && liveHistory
     ? liveHistory.values
-    : generateChartData(chartId, chartValue, timeFrame);
-  const chartLbls  = useLiveChart && liveHistory
-    ? liveHistory.labels
-    : getXAxisLabels(timeFrame, chartVals.length);
+    : syntheticChartVals;
+  const chartLbls = useMemo(() => {
+    if (useLiveChart && liveHistory) return liveHistory.labels;
+    return getXAxisLabels(timeFrame, syntheticChartVals.length);
+  }, [useLiveChart, liveHistory, timeFrame, syntheticChartVals.length]);
   const chartYFmt  = ticker ? fmtPrice : undefined; // ticker → share price; sector → $B market cap
 
   // Chart-implied change (first→last bar) — used when FMP has no field (1W, All)
@@ -1262,11 +1264,10 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   const fpe     = ticker ? ticker.forwardPE   : health.forwardPE;
   const netDebt = ticker ? ticker.netDebt     : health.netDebt;
   const netDebtV = ticker ? ticker.netDebtValue : health.netDebtValue;
-  const pegRatio = barTtmMetrics?.priceEarningsToGrowthRatio
-    ?? ticker?.priceEarningsToGrowthRatio
-    ?? null;
-  const opMargin = barTtmMetrics?.operatingProfitMargin ?? ticker?.operatingProfitMargin ?? null;
-  const roeRatio   = barTtmMetrics?.returnOnEquity ?? ticker?.returnOnEquity ?? null;
+  /** PEG / OP MARGIN / ROE come from /api/quotes (TTM via `/stable/ratios-ttm` + `/stable/key-metrics-ttm`) when live. */
+  const pegRatio = coerceFinite(ticker?.priceEarningsToGrowthRatio);
+  const opMargin = coerceFinite(ticker?.operatingProfitMargin);
+  const roeRatio = coerceFinite(ticker?.returnOnEquity);
   const price   = ticker
     ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
         chartHoverFrac !== null
@@ -1287,7 +1288,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
 
   return (
     <div
-      className="flex flex-col min-w-0"
+      className="flex flex-col min-w-0 max-w-full overflow-x-hidden"
       style={{
         backgroundColor: RH.card,
         border: `1px solid ${ticker ? RH.borderActive : RH.border}`,
@@ -1382,7 +1383,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
 
       {/* ── Metrics row ──────────────────────────────────── */}
       <div
-        className="mx-5 mb-4 px-4 py-2 flex min-w-0 items-end gap-2 overflow-x-auto"
+        className="mx-5 mb-4 px-5 py-3 flex min-w-0 items-end gap-x-4 gap-y-2 overflow-x-auto"
         style={{
           borderRadius: 3,
           backgroundColor: 'rgba(255,255,255,0.025)',
@@ -1393,9 +1394,9 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
           /* ── Ticker mode: all on one line ── */
           <>
             {/* Left cluster: fixed widths + small gap so % sits near price without shifting Mkt Cap */}
-            <div className="flex items-end gap-0 shrink-0 mr-10">
-              <div className="flex flex-col gap-0.5 shrink-0 w-[6.5rem]">
-                <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Price</span>
+            <div className="flex items-end gap-1 shrink-0 mr-12">
+              <div className="flex flex-col gap-1 shrink-0 w-[7rem]">
+                <span className="text-[11px] uppercase tracking-wide" style={{ color: RH.muted }}>Price</span>
                 <span
                   className="text-[17px] font-bold tabular-nums leading-none block"
                   style={{ color: RH.text }}
@@ -1403,7 +1404,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
                   {price}
                 </span>
               </div>
-              <div className="flex flex-col gap-0.5 shrink-0 min-w-[6rem]">
+              <div className="flex flex-col gap-0 shrink-0 min-w-[6.75rem]">
                 <DeltaMetricSm
                   label={timeFrame}
                   value={barPeriodDisplay !== null ? `${Math.abs(barPeriodDisplay).toFixed(1)}%` : '—'}
@@ -1412,15 +1413,18 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
               </div>
             </div>
 
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Mkt Cap</span>
+            <div className="flex flex-col gap-1 shrink-0">
+              <span className="text-[11px] uppercase tracking-wide" style={{ color: RH.muted }}>Mkt Cap</span>
               <span className="text-[13px] font-semibold tabular-nums leading-none" style={{ color: RH.secondary }}>
                 {cap}
               </span>
             </div>
 
+            <MetricsBarDivider />
+
             <MetricSm label="Fwd P/E"  value={fpe !== null ? `${fpe.toFixed(1)}x` : 'NM'} />
             <MetricSm label="Net Debt" value={netDebt} color={netDebtV < 0 ? RH.green : RH.secondary} />
+            <MetricsBarDivider />
             <MetricSm label="PEG" value={fmtBarPeg(pegRatio)} />
             <MetricSm label="OP MARGIN" value={fmtBarPctRatio(opMargin)} />
             <MetricSm label="ROE" value={fmtBarPctRatio(roeRatio)} />
@@ -1428,8 +1432,8 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
         ) : (
           /* ── Sector mode: Agg Cap left (large), rest inline ── */
           <>
-            <div className="flex flex-col gap-0.5 shrink-0">
-              <span className="text-[12px] uppercase tracking-widest" style={{ color: RH.muted }}>Agg Cap</span>
+            <div className="flex flex-col gap-1 shrink-0">
+              <span className="text-[11px] uppercase tracking-wide" style={{ color: RH.muted }}>Agg Cap</span>
               <div className="flex items-baseline gap-2 flex-wrap">
                 <span className="text-[17px] font-bold tabular-nums leading-none" style={{ color: RH.text }}>
                   {cap}
@@ -1476,16 +1480,18 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
       </div>
 
       {/* ── Time frame + indicator controls ──────────────── */}
-      <div className="px-5 pt-2 pb-1.5 flex items-center justify-between gap-2">
-        {/* Time frames */}
-        <div className="flex gap-0.5">
+      <div
+        className="px-5 pt-2 pb-1.5 flex flex-col gap-2.5 min-w-0 max-w-full sm:flex-row sm:items-center sm:justify-between sm:gap-2"
+      >
+        {/* Time frames — wrap on narrow viewports (8 buttons + indicators don’t fit one row on phone) */}
+        <div className="flex flex-wrap gap-y-1 gap-x-0.5 min-w-0">
           {TIME_FRAMES.map(tf => {
             const on = tf === timeFrame;
             return (
               <button
                 key={tf}
                 onClick={() => setTimeFrame(tf)}
-                className="text-[13px] font-semibold px-2 py-1 transition-all duration-100 cursor-pointer"
+                className="text-[12px] sm:text-[13px] font-semibold px-1.5 sm:px-2 py-1 transition-all duration-100 cursor-pointer shrink-0"
                 style={{
                   borderRadius: 2,
                   backgroundColor: on ? 'rgba(255,255,255,0.1)' : 'transparent',
@@ -1498,9 +1504,9 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
           })}
         </div>
 
-        {/* Right side: indicator toggles + live timestamp */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
+        {/* Indicator toggles + live timestamp */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 w-full sm:w-auto sm:justify-end sm:shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {(['bb', 'vol', 'rsi'] as Indicator[]).map(ind => {
               const on     = indicators.has(ind);
               const labels = { bb: 'BB', vol: 'Vol', rsi: 'RSI' };
@@ -1508,7 +1514,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
                 <button
                   key={ind}
                   onClick={() => toggleIndicator(ind)}
-                  className="text-[10.5px] font-semibold px-2 py-0.5 cursor-pointer transition-all duration-100"
+                  className="text-[10px] sm:text-[10.5px] font-semibold px-1.5 sm:px-2 py-0.5 cursor-pointer transition-all duration-100"
                   style={{
                     borderRadius:    2,
                     backgroundColor: on ? `${accentColor}18` : 'transparent',
@@ -1523,12 +1529,16 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
             })}
           </div>
 
-          {/* Live data timestamp */}
           {updatedStr && (
-            <span className="flex items-center gap-1" style={{ color: RH.muted }}>
-              <span className="inline-block w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: accentColor, opacity: 0.8 }} />
-              <span className="text-[12px] font-mono">{updatedStr}</span>
+            <span
+              className="flex items-center gap-1 min-w-0 tabular-nums"
+              style={{ color: RH.muted }}
+            >
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: accentColor, opacity: 0.8 }}
+              />
+              <span className="text-[11px] sm:text-[12px] font-mono truncate">{updatedStr}</span>
             </span>
           )}
         </div>

@@ -1,6 +1,7 @@
 import {
   fetchQuotes,
   fetchPriceChanges,
+  loadTtmRatioTriple,
   type FMPPriceChange,
 } from '@/src/lib/fmp';
 import { tickerData, type TickerData } from '@/src/data/tickerData';
@@ -70,12 +71,17 @@ export async function GET(request: Request) {
 
     const changeMap = Object.fromEntries(changes.map(c => [c.symbol, c]));
 
+    /** PEG / operating margin / ROE — same TTM bundle as /api/metrics-ttm (guaranteed on each row). */
+    const ttmRows = await Promise.all(quotes.map(q => loadTtmRatioTriple(q.symbol)));
+    const ttmBySym = Object.fromEntries(quotes.map((q, i) => [q.symbol, ttmRows[i]]));
+
     const result = quotes.map(q => {
       const chg  = changeMap[q.symbol];
       const mock = tickerData[q.symbol];           // fallback for fields not in free quote
+      const ttm  = ttmBySym[q.symbol];
 
       return {
-        symbol:               q.symbol,
+        symbol:               String(q.symbol ?? '').toUpperCase(),
         name:                 q.name  || mock?.name  || q.symbol,
         price:                q.price,
         marketCap:            fmtCap(q.marketCap),
@@ -87,9 +93,12 @@ export async function GET(request: Request) {
         ttmPE:                mock?.ttmPE           ?? null,  // stable /quote no longer includes pe
         netDebt:              mock?.netDebt         ?? 'N/A',
         netDebtValue:         mock?.netDebtValue    ?? 0,
-        priceEarningsToGrowthRatio: mock?.priceEarningsToGrowthRatio ?? null,
-        operatingProfitMargin:      mock?.operatingProfitMargin ?? null,
-        returnOnEquity:             mock?.returnOnEquity ?? null,
+        priceEarningsToGrowthRatio:
+          ttm?.priceEarningsToGrowthRatio ?? mock?.priceEarningsToGrowthRatio ?? null,
+        operatingProfitMargin:
+          ttm?.operatingProfitMargin ?? mock?.operatingProfitMargin ?? null,
+        returnOnEquity:
+          ttm?.returnOnEquity ?? mock?.returnOnEquity ?? null,
         periodChanges:        periodChangesFromFmp(chg),
       };
     });
