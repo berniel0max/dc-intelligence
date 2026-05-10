@@ -1,7 +1,6 @@
 import { cookies } from 'next/headers';
 import SupplyChainMap from '@/src/components/SupplyChainMap';
 import IndustryOverview from '@/src/components/IndustryOverview';
-import DataSourceNotice from '@/src/components/DataSourceNotice';
 import { EDIT_COOKIE_NAME, verifyEditSession } from '@/src/lib/editAuth';
 
 export default async function Home() {
@@ -30,7 +29,6 @@ export default async function Home() {
           </p>
         </header>
 
-        <DataSourceNotice />
         <IndustryOverview />
         <SupplyChainMap editAllowed={editAllowed} />
 

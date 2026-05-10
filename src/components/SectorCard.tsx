@@ -637,7 +637,7 @@ function TickerTable({
   const [adding, setAdding]         = useState(false);
   const [inputVal, setInputVal]     = useState('');
   const [inputError, setInputError] = useState('');
-  const [capSort, setCapSort]       = useState<'desc' | 'asc' | null>(null);
+  const [capSort, setCapSort]       = useState<'desc' | 'asc' | null>('desc');
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [favorites, setFavorites]   = useState<Set<string>>(() => new Set());
 
@@ -692,7 +692,7 @@ function TickerTable({
     if (e.key === 'Escape') { setAdding(false); setInputVal(''); setInputError(''); }
   };
 
-  // cols: ★ | sym | price | spark | mkt cap | pe | ytd | 1y | debt | remove
+  // cols: ★ | sym | price | spark | mkt cap | ytd | 1y | pe | debt | remove
   const COLS = editAllowed
     ? '20px 0.9fr 1fr 1.35fr 1.05fr 0.88fr 0.88fr 0.88fr 1.05fr 16px'
     : '20px 0.9fr 1fr 1.35fr 1.05fr 0.88fr 0.88fr 0.88fr 1.05fr';
@@ -722,6 +722,8 @@ function TickerTable({
             }
           </svg>
         </button>
+        <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>YTD</span>
+        <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>1Y</span>
         <button onClick={onTogglePE}
           className="flex items-center gap-0.5 cursor-pointer"
           style={{ color: RH.muted }}
@@ -733,8 +735,6 @@ function TickerTable({
             <path d="M2 3l2-2 2 2M2 5l2 2 2-2" stroke={RH.muted} strokeWidth="1.4" strokeLinecap="round" />
           </svg>
         </button>
-        <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>YTD</span>
-        <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>1Y</span>
         <span className="text-[12px] uppercase tracking-wider" style={{ color: RH.muted }}>Debt</span>
         {editAllowed ? <span /> : null}
       </div>
@@ -792,9 +792,6 @@ function TickerTable({
               <span className={VAL} style={{ color: RH.secondary }}>
                 {t ? t.marketCap : '—'}
               </span>
-              <span className={VAL} style={{ color: RH.secondary }}>
-                {pe != null ? `${pe.toFixed(0)}x` : 'NM'}
-              </span>
               <span className={VAL}
                 style={{ color: t && t.ytdChangePercent >= 0 ? RH.green : RH.red }}>
                 {t ? fmtPct(t.ytdChangePercent) : '—'}
@@ -802,6 +799,9 @@ function TickerTable({
               <span className={VAL}
                 style={{ color: t && t.ttmChangePercent >= 0 ? RH.green : RH.red }}>
                 {t ? fmtPct(t.ttmChangePercent) : '—'}
+              </span>
+              <span className={VAL} style={{ color: RH.secondary }}>
+                {pe != null ? `${pe.toFixed(0)}x` : 'NM'}
               </span>
               <span className={VAL}
                 style={{ color: t && t.netDebtValue < 0 ? RH.green : RH.secondary }}>
