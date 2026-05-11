@@ -5,7 +5,7 @@ import type { SectorHealth } from '@/src/data/sectorHealth';
 import { generateChartData, getXAxisLabels, TIME_FRAMES, type TimeFrame } from '@/src/data/chartData';
 import { SECTOR_ICONS } from '@/src/components/SectorIcon';
 import { tickerData, type TickerData } from '@/src/data/tickerData';
-import { loadFavoriteTickers, saveFavoriteTickers, isHardcodedFavorite } from '@/src/lib/tickerFavorites';
+import { useTickerFavorites } from '@/src/context/TickerFavoritesContext';
 
 // ── Design tokens (Robinhood Legend) ─────────────────────────────────────────
 const RH = {
@@ -639,25 +639,7 @@ function TickerTable({
   const [inputError, setInputError] = useState('');
   const [capSort, setCapSort]       = useState<'desc' | 'asc' | null>('desc');
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
-  const [favorites, setFavorites]   = useState<Set<string>>(() => new Set());
-
-  useEffect(() => {
-    setFavorites(loadFavoriteTickers());
-  }, []);
-
-  const toggleFavorite = useCallback((sym: string) => {
-    setFavorites(prev => {
-      const next = new Set(prev);
-      if (next.has(sym)) {
-        if (isHardcodedFavorite(sym)) return prev;
-        next.delete(sym);
-      } else {
-        next.add(sym);
-      }
-      saveFavoriteTickers(next);
-      return next;
-    });
-  }, []);
+  const { favorites, toggleFavorite } = useTickerFavorites();
 
   const sortedTickers = useMemo(() => {
     const order = new Map(tickers.map((t, i) => [t.symbol, i]));

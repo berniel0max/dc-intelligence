@@ -1,6 +1,8 @@
 import { hardcodedFavoriteTickerSet } from '@/src/data/hardcodedFavoriteTickers';
 
-const LS_KEY = 'dc-intelligence-favorite-tickers';
+export const TICKER_FAVORITES_STORAGE_KEY = 'dc-intelligence-favorite-tickers';
+
+const LS_KEY = TICKER_FAVORITES_STORAGE_KEY;
 
 function loadExtraFavoriteTickers(): Set<string> {
   if (typeof window === 'undefined') return new Set();

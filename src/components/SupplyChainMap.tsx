@@ -1,5 +1,4 @@
-'use client';
-
+import { TickerFavoritesProvider } from '@/src/context/TickerFavoritesContext';
 import sectorsData from '@/src/data/sectors.json';
 import { sectorHealthData, SectorHealth } from '@/src/data/sectorHealth';
 import SectorCard from '@/src/components/SectorCard';
@@ -105,6 +104,7 @@ export default function SupplyChainMap({ editAllowed }: { editAllowed: boolean }
   let globalIndex = 0;
 
   return (
+    <TickerFavoritesProvider>
     <div className="w-full space-y-1">
       {LAYOUT.layers.map((layer, layerIdx) => {
         const layerStart = globalIndex;
@@ -153,5 +153,6 @@ export default function SupplyChainMap({ editAllowed }: { editAllowed: boolean }
         );
       })}
     </div>
+    </TickerFavoritesProvider>
   );
 }
