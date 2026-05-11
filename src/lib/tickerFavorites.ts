@@ -1,6 +1,8 @@
+import { hardcodedFavoriteTickerSet } from '@/src/data/hardcodedFavoriteTickers';
+
 const LS_KEY = 'dc-intelligence-favorite-tickers';
 
-export function loadFavoriteTickers(): Set<string> {
+function loadExtraFavoriteTickers(): Set<string> {
   if (typeof window === 'undefined') return new Set();
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -15,11 +17,25 @@ export function loadFavoriteTickers(): Set<string> {
   }
 }
 
+/** Hardcoded symbols ∪ extras saved in localStorage (client only). */
+export function loadFavoriteTickers(): Set<string> {
+  const hard  = hardcodedFavoriteTickerSet();
+  const extra = loadExtraFavoriteTickers();
+  return new Set([...hard, ...extra]);
+}
+
+/** Persist only symbols that are not hardcoded (hardcoded list lives in source). */
 export function saveFavoriteTickers(symbols: Iterable<string>) {
   if (typeof window === 'undefined') return;
+  const hard = hardcodedFavoriteTickerSet();
+  const extra = [...symbols].filter(s => !hard.has(s));
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify([...symbols]));
+    localStorage.setItem(LS_KEY, JSON.stringify(extra));
   } catch {
     /* ignore quota / private mode */
   }
+}
+
+export function isHardcodedFavorite(sym: string): boolean {
+  return hardcodedFavoriteTickerSet().has(sym.trim().toUpperCase());
 }

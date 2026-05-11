@@ -5,7 +5,7 @@ import type { SectorHealth } from '@/src/data/sectorHealth';
 import { generateChartData, getXAxisLabels, TIME_FRAMES, type TimeFrame } from '@/src/data/chartData';
 import { SECTOR_ICONS } from '@/src/components/SectorIcon';
 import { tickerData, type TickerData } from '@/src/data/tickerData';
-import { loadFavoriteTickers, saveFavoriteTickers } from '@/src/lib/tickerFavorites';
+import { loadFavoriteTickers, saveFavoriteTickers, isHardcodedFavorite } from '@/src/lib/tickerFavorites';
 
 // ── Design tokens (Robinhood Legend) ─────────────────────────────────────────
 const RH = {
@@ -648,8 +648,12 @@ function TickerTable({
   const toggleFavorite = useCallback((sym: string) => {
     setFavorites(prev => {
       const next = new Set(prev);
-      if (next.has(sym)) next.delete(sym);
-      else next.add(sym);
+      if (next.has(sym)) {
+        if (isHardcodedFavorite(sym)) return prev;
+        next.delete(sym);
+      } else {
+        next.add(sym);
+      }
       saveFavoriteTickers(next);
       return next;
     });
