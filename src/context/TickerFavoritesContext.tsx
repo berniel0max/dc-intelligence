@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
 } from 'react';
@@ -27,18 +28,22 @@ export function TickerFavoritesProvider({ children }: { children: React.ReactNod
   /** Same on server and first client paint — avoids hydration mismatch vs localStorage. */
   const [favorites, setFavorites] = useState<Set<string>>(() => hardcodedFavoriteTickerSet());
 
-  useEffect(() => {
+  /** After hydration, merge localStorage before paint so UI (and toggles) see full set. */
+  useLayoutEffect(() => {
     setFavorites(loadFavoriteTickers());
   }, []);
 
   const toggleFavorite = useCallback((sym: string) => {
-    setFavorites(prev => {
-      const next = new Set(prev);
-      if (next.has(sym)) {
-        if (isHardcodedFavorite(sym)) return prev;
-        next.delete(sym);
+    const u = sym.trim().toUpperCase();
+    if (!u) return;
+    setFavorites(() => {
+      /** Never branch from `prev`: before LS merge it is only hardcoded and would wipe extras on save. */
+      const next = new Set(loadFavoriteTickers());
+      if (next.has(u)) {
+        if (isHardcodedFavorite(u)) return next;
+        next.delete(u);
       } else {
-        next.add(sym);
+        next.add(u);
       }
       saveFavoriteTickers(next);
       return loadFavoriteTickers();
