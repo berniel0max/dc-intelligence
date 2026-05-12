@@ -52,6 +52,8 @@ export interface FMPPriceChange {
 export interface FMPBar {
   date: string;
   close: number;
+  /** Split-adjusted close when FMP provides it — preferred for return %. */
+  adjClose?: number;
   open?: number;
   high?: number;
   low?: number;
@@ -90,16 +92,164 @@ export async function fetchQuotes(symbols: string[]): Promise<FMPQuote[]> {
     .map(r => r.value);
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function pickNumRow(row: Record<string, unknown>, keys: string[]): number | null {
+  for (const k of keys) {
+    const n = parseFiniteNumber(row[k]);
+    if (n != null) return n;
+  }
+  return null;
+}
+
+function numFromRow(row: Record<string, unknown>, keys: string[], fallback = 0): number {
+  return pickNumRow(row, keys) ?? fallback;
+}
+
+/** Normalize one FMP stock-price-change row (handles alternate key casing). */
+function normalizePriceChangeRow(raw: unknown): FMPPriceChange | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const row = raw as Record<string, unknown>;
+  const symbol = String(row.symbol ?? row.ticker ?? '').trim().toUpperCase();
+  if (!symbol) return null;
+  return {
+    symbol,
+    '1D': numFromRow(row, ['1D', '1d']),
+    '5D': numFromRow(row, ['5D', '5d']),
+    '1M': numFromRow(row, ['1M', '1m']),
+    '3M': numFromRow(row, ['3M', '3m']),
+    '6M': numFromRow(row, ['6M', '6m']),
+    ytd:  numFromRow(row, ['ytd', 'YTD', 'yearToDate', 'year_to_date']),
+    '1Y': numFromRow(row, ['1Y', '1y', '12M', '12m']),
+    '3Y': numFromRow(row, ['3Y', '3y']),
+    '5Y': numFromRow(row, ['5Y', '5y']),
+  };
+}
+
+function parsePriceChangePayload(data: unknown): FMPPriceChange[] {
+  if (!Array.isArray(data)) return [];
+  const out: FMPPriceChange[] = [];
+  for (const el of data) {
+    const row = normalizePriceChangeRow(el);
+    if (row) out.push(row);
+  }
+  return out;
+}
+
+const PRICE_CHG_CHUNK = 10;
+const PRICE_CHG_PAUSE_MS = 160;
+
+async function fetchPriceChangesChunk(chunk: string[]): Promise<FMPPriceChange[]> {
+  const q = chunk.map(s => encodeURIComponent(s)).join(',');
+  const url = `${FMP_BASE}/stock-price-change?symbol=${q}&apikey=${apiKey()}`;
+  let res = await fetch(url, { cache: 'no-store' });
+  if (res.status === 429 || res.status === 503) {
+    await sleep(450);
+    res = await fetch(url, { cache: 'no-store' });
+  }
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`FMP /stable/stock-price-change error ${res.status}: ${body.slice(0, 400)}`);
+  }
+  const data: unknown = await res.json();
+  if (data && typeof data === 'object' && !Array.isArray(data) && 'Error Message' in data) {
+    throw new Error(String((data as Record<string, unknown>)['Error Message']));
+  }
+  return parsePriceChangePayload(data);
+}
+
+/**
+ * YTD % and ~1-year % from split-adjusted EOD when stock-price-change is missing or rate-limited.
+ * Aligns with chart date ranges (calendar YTD + ~365d window).
+ */
+export async function fetchYtdOneYearPctFromEod(
+  symbol: string,
+): Promise<{ ytd: number | null; oneY: number | null }> {
+  const sym = symbol.trim().toUpperCase();
+  if (!sym) return { ytd: null, oneY: null };
+
+  const px = (b: FMPBar): number => {
+    if (typeof b.adjClose === 'number' && Number.isFinite(b.adjClose) && b.adjClose > 0) return b.adjClose;
+    return b.close;
+  };
+
+  const to = new Date();
+  const from = new Date(to);
+  from.setFullYear(from.getFullYear() - 1);
+  const iso = (d: Date) => d.toISOString().split('T')[0];
+
+  try {
+    const bars = await fetchDailyHistory(sym, iso(from), iso(to));
+    if (bars.length < 2) return { ytd: null, oneY: null };
+
+    const last = px(bars[bars.length - 1]);
+    const first1y = px(bars[0]);
+    if (!Number.isFinite(last) || !Number.isFinite(first1y) || first1y <= 0)
+      return { ytd: null, oneY: null };
+
+    const oneY = ((last - first1y) / first1y) * 100;
+
+    const y = to.getFullYear();
+    const ytdStart = `${y}-01-01`;
+    const ytdBars = bars.filter(b => b.date >= ytdStart);
+    let ytd: number | null = null;
+    if (ytdBars.length >= 1) {
+      const y0 = px(ytdBars[0]);
+      if (Number.isFinite(y0) && y0 > 0) ytd = ((last - y0) / y0) * 100;
+    }
+    return { ytd, oneY };
+  } catch {
+    return { ytd: null, oneY: null };
+  }
+}
+
+/** EOD fallback in small parallel batches (faster than fully serial; paced to limit 429s). */
+export async function fetchEodYtdOneYearBatch(
+  symbols: string[],
+): Promise<Map<string, { ytd: number | null; oneY: number | null }>> {
+  const m = new Map<string, { ytd: number | null; oneY: number | null }>();
+  const uniq = [...new Set(symbols.map(s => s.trim().toUpperCase()).filter(Boolean))];
+  const BATCH = 4;
+  for (let i = 0; i < uniq.length; i += BATCH) {
+    const slice = uniq.slice(i, i + BATCH);
+    const rows = await Promise.all(slice.map(s => fetchYtdOneYearPctFromEod(s)));
+    slice.forEach((s, j) => m.set(s, rows[j]));
+    if (i + BATCH < uniq.length) await sleep(200);
+  }
+  return m;
+}
+
 /**
  * Batch price change — YTD %, 1Y %, etc.
- * New stable endpoint: /stable/stock-price-change?symbol=AAPL,MSFT,...
+ * Chunked + paced to reduce 429s; failed chunks leave symbols to be filled via EOD fallback.
  */
 export async function fetchPriceChanges(symbols: string[]): Promise<FMPPriceChange[]> {
-  const url = `${FMP_BASE}/stock-price-change?symbol=${symbols.join(',')}&apikey=${apiKey()}`;
-  const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`FMP /stable/stock-price-change error ${res.status}: ${await res.text()}`);
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
+  const uniq = [...new Set(symbols.map(s => s.trim().toUpperCase()).filter(Boolean))];
+  if (!uniq.length) return [];
+
+  const merged: FMPPriceChange[] = [];
+  const seen = new Set<string>();
+
+  for (let i = 0; i < uniq.length; i += PRICE_CHG_CHUNK) {
+    const chunk = uniq.slice(i, i + PRICE_CHG_CHUNK);
+    try {
+      const rows = await fetchPriceChangesChunk(chunk);
+      for (const r of rows) {
+        const u = r.symbol.toUpperCase();
+        if (!seen.has(u)) {
+          seen.add(u);
+          merged.push({ ...r, symbol: u });
+        }
+      }
+    } catch {
+      /* symbols in chunk missing until EOD fallback */
+    }
+    if (i + PRICE_CHG_CHUNK < uniq.length && PRICE_CHG_PAUSE_MS > 0) await sleep(PRICE_CHG_PAUSE_MS);
+  }
+
+  return merged;
 }
 
 /**

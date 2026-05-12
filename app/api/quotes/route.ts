@@ -1,4 +1,5 @@
 import {
+  fetchEodYtdOneYearBatch,
   fetchQuotes,
   fetchPriceChanges,
   loadTtmRatioTriple,
@@ -61,34 +62,43 @@ export async function GET(request: Request) {
       throw new Error('FMP returned no quote data (check API key and symbol list)');
     }
 
-    let changes: FMPPriceChange[] = [];
-    try {
-      changes = await fetchPriceChanges(symbols);
-    } catch (chgErr) {
-      const m = chgErr instanceof Error ? chgErr.message : String(chgErr);
-      console.warn(`[/api/quotes] stock-price-change failed (${m.slice(0, 100)}) — using static YTD/1Y where needed`);
-    }
-
-    const changeMap = Object.fromEntries(changes.map(c => [c.symbol, c]));
+    /** Chunked stock-price-change; missing symbols (e.g. 429) filled from EOD — avoids stale static YTD/1Y. */
+    const changeRows = await fetchPriceChanges(symbols);
+    const changeBySym = new Map(changeRows.map(r => [r.symbol.toUpperCase(), r]));
+    const missingChg = symbols.map(s => s.trim().toUpperCase()).filter(s => !changeBySym.has(s));
+    const eodMap =
+      missingChg.length > 0 ? await fetchEodYtdOneYearBatch(missingChg) : new Map();
 
     /** PEG / operating margin / ROE — same TTM bundle as /api/metrics-ttm (guaranteed on each row). */
     const ttmRows = await Promise.all(quotes.map(q => loadTtmRatioTriple(q.symbol)));
-    const ttmBySym = Object.fromEntries(quotes.map((q, i) => [q.symbol, ttmRows[i]]));
+    const ttmBySym = Object.fromEntries(
+      quotes.map((q, i) => [String(q.symbol ?? '').toUpperCase(), ttmRows[i]]),
+    );
 
     const result = quotes.map(q => {
-      const chg  = changeMap[q.symbol];
-      const mock = tickerData[q.symbol];           // fallback for fields not in free quote
-      const ttm  = ttmBySym[q.symbol];
+      const symUp = String(q.symbol ?? '').toUpperCase();
+      const chg  = changeBySym.get(symUp);
+      const eod  = eodMap.get(symUp);
+      const mock = tickerData[symUp];
+      const ttm  = ttmBySym[symUp];
+
+      const ytdLive = chg ? chg.ytd : (eod?.ytd ?? null);
+      const y1Live  = chg ? chg['1Y'] : (eod?.oneY ?? null);
+
+      const periodFromEod =
+        !chg && eod && (eod.ytd != null || eod.oneY != null)
+          ? { ytd: eod.ytd ?? undefined, '1Y': eod.oneY ?? undefined }
+          : undefined;
 
       return {
-        symbol:               String(q.symbol ?? '').toUpperCase(),
+        symbol:               symUp,
         name:                 q.name  || mock?.name  || q.symbol,
         price:                q.price,
         marketCap:            fmtCap(q.marketCap),
         marketCapValue:       q.marketCap / 1e9,   // billions
         dailyChangePercent:   q.changePercentage,  // stable API field name
-        ytdChangePercent:     chg?.ytd              ?? mock?.ytdChangePercent  ?? 0,
-        ttmChangePercent:     chg?.['1Y']           ?? mock?.ttmChangePercent  ?? 0,
+        ytdChangePercent:     ytdLive ?? mock?.ytdChangePercent ?? 0,
+        ttmChangePercent:     y1Live  ?? mock?.ttmChangePercent  ?? 0,
         forwardPE:            mock?.forwardPE       ?? null,
         ttmPE:                mock?.ttmPE           ?? null,  // stable /quote no longer includes pe
         netDebt:              mock?.netDebt         ?? 'N/A',
@@ -99,7 +109,7 @@ export async function GET(request: Request) {
           ttm?.operatingProfitMargin ?? mock?.operatingProfitMargin ?? null,
         returnOnEquity:
           ttm?.returnOnEquity ?? mock?.returnOnEquity ?? null,
-        periodChanges:        periodChangesFromFmp(chg),
+        periodChanges:        chg ? periodChangesFromFmp(chg) : periodFromEod,
       };
     });
 
