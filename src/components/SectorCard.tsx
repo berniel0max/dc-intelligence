@@ -1250,7 +1250,7 @@ export default function SectorCard({ sector, health, accentColor, index, editAll
   const fpe     = ticker ? ticker.forwardPE   : health.forwardPE;
   const netDebt = ticker ? ticker.netDebt     : health.netDebt;
   const netDebtV = ticker ? ticker.netDebtValue : health.netDebtValue;
-  /** PEG / OP MARGIN / ROE come from /api/quotes (TTM via `/stable/ratios-ttm` + `/stable/key-metrics-ttm`) when live. */
+  /** PEG / OP MARGIN / ROE / Fwd P/E / Net debt — from /api/quotes (FMP ratios-ttm + key-metrics-ttm) when live. */
   const pegRatio = coerceFinite(ticker?.priceEarningsToGrowthRatio);
   const opMargin = coerceFinite(ticker?.operatingProfitMargin);
   const roeRatio = coerceFinite(ticker?.returnOnEquity);

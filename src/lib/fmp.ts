@@ -317,25 +317,53 @@ export async function fetchKeyMetricsTtm(symbol: string): Promise<Record<string,
   }
 }
 
-/**
- * Map FMP stable TTM payloads → metrics bar fields.
- * Ratios use `*TTM` suffixes; ROE comes from key-metrics-ttm (`returnOnEquityTTM`).
- */
-export function ttmRatioTripleFromSources(
-  ratios: Record<string, unknown> | null | undefined,
-  keyMetrics: Record<string, unknown> | null | undefined,
-): {
+export type TtmRatioTriple = {
   priceEarningsToGrowthRatio: number | null;
   operatingProfitMargin: number | null;
   returnOnEquity: number | null;
-} {
+};
+
+export type TtmQuoteBundle = TtmRatioTriple & {
+  forwardPE: number | null;
+  ttmPE: number | null;
+  /** Raw USD (FMP); divide by 1e9 for `TickerData.netDebtValue` (billions). */
+  netDebtUsd: number | null;
+};
+
+export function emptyTtmQuoteBundle(): TtmQuoteBundle {
+  return {
+    priceEarningsToGrowthRatio: null,
+    operatingProfitMargin:      null,
+    returnOnEquity:             null,
+    forwardPE:                  null,
+    ttmPE:                      null,
+    netDebtUsd:                 null,
+  };
+}
+
+export function emptyTtmRatioTriple(): TtmRatioTriple {
+  const e = emptyTtmQuoteBundle();
+  return {
+    priceEarningsToGrowthRatio: e.priceEarningsToGrowthRatio,
+    operatingProfitMargin:      e.operatingProfitMargin,
+    returnOnEquity:             e.returnOnEquity,
+  };
+}
+
+/**
+ * Map FMP stable TTM payloads → metrics bar fields + valuation (Fwd/TTM P/E, net debt).
+ * Ratios use `*TTM` suffixes; ROE often comes from key-metrics-ttm (`returnOnEquityTTM`).
+ */
+export function ttmQuoteBundleFromSources(
+  ratios: Record<string, unknown> | null | undefined,
+  keyMetrics: Record<string, unknown> | null | undefined,
+): TtmQuoteBundle {
   const peg = firstNumber(
     ratios?.priceToEarningsGrowthRatioTTM,
     ratios?.priceEarningsToGrowthRatioTTM,
     ratios?.priceEarningsToGrowthRatio,
     ratios?.priceEarningsGrowthRatio,
   );
-  /** Operating margin: stable ratios-ttm uses operatingProfitMarginTTM; fall back to EBIT margin or snake_case. */
   const opm = firstNumber(
     ratios?.operatingProfitMarginTTM,
     ratios?.operatingProfitMargin,
@@ -344,7 +372,6 @@ export function ttmRatioTripleFromSources(
     ratios?.continuousOperationsProfitMarginTTM,
     ratios?.pretaxProfitMarginTTM,
   );
-  /** ROE: on stable, ratios-ttm often omits ROE; key-metrics-ttm has returnOnEquityTTM. */
   const roe = firstNumber(
     keyMetrics?.returnOnEquityTTM,
     keyMetrics?.returnOnEquity,
@@ -354,36 +381,66 @@ export function ttmRatioTripleFromSources(
     ratios?.returnOnEquity,
     ratios?.return_on_equity_ttm,
   );
+
+  const ttmPE = firstNumber(
+    keyMetrics?.peRatioTTM,
+    keyMetrics?.priceEarningsRatioTTM,
+    keyMetrics?.peRatio,
+    ratios?.priceEarningsRatioTTM,
+    ratios?.priceToEarningsRatioTTM,
+    ratios?.peRatioTTM,
+    ratios?.peRatio,
+  );
+
+  const forwardPE = firstNumber(
+    ratios?.forwardPriceToEarningsRatioTTM,
+    ratios?.forwardPriceToEarningsTTM,
+    ratios?.forwardPE,
+    keyMetrics?.forwardPeRatioTTM,
+    keyMetrics?.forwardPeTTM,
+    keyMetrics?.forwardPE,
+  );
+
+  const netDebtUsd = firstNumber(
+    keyMetrics?.netDebtTTM,
+    keyMetrics?.netDebt,
+    ratios?.netDebtTTM,
+    ratios?.netDebt,
+  );
+
   return {
     priceEarningsToGrowthRatio: peg,
     operatingProfitMargin:      opm,
     returnOnEquity:             roe,
+    forwardPE,
+    ttmPE,
+    netDebtUsd,
   };
 }
 
-export type TtmRatioTriple = ReturnType<typeof ttmRatioTripleFromSources>;
-
-export function emptyTtmRatioTriple(): TtmRatioTriple {
-  return {
-    priceEarningsToGrowthRatio: null,
-    operatingProfitMargin:      null,
-    returnOnEquity:             null,
-  };
-}
-
-/** Load PEG / operating margin / ROE from FMP (two TTM endpoints). Never throws; returns nulls on failure. */
-export async function loadTtmRatioTriple(symbol: string): Promise<TtmRatioTriple> {
+/** Full TTM bundle for quote rows (PEG, margins, ROE, P/E, net debt). */
+export async function loadTtmQuoteBundle(symbol: string): Promise<TtmQuoteBundle> {
   const sym = symbol.trim().toUpperCase();
-  if (!sym) return emptyTtmRatioTriple();
+  if (!sym) return emptyTtmQuoteBundle();
   try {
     const [ratiosRow, kmRow] = await Promise.all([
       fetchRatiosTtm(sym),
       fetchKeyMetricsTtm(sym),
     ]);
-    return ttmRatioTripleFromSources(ratiosRow, kmRow);
+    return ttmQuoteBundleFromSources(ratiosRow, kmRow);
   } catch {
-    return emptyTtmRatioTriple();
+    return emptyTtmQuoteBundle();
   }
+}
+
+/** @deprecated Prefer `loadTtmQuoteBundle` when you need P/E and debt; kept for /api/metrics-ttm. */
+export async function loadTtmRatioTriple(symbol: string): Promise<TtmRatioTriple> {
+  const b = await loadTtmQuoteBundle(symbol);
+  return {
+    priceEarningsToGrowthRatio: b.priceEarningsToGrowthRatio,
+    operatingProfitMargin:      b.operatingProfitMargin,
+    returnOnEquity:             b.returnOnEquity,
+  };
 }
 
 /**
