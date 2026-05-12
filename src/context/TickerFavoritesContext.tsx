@@ -36,18 +36,16 @@ export function TickerFavoritesProvider({ children }: { children: React.ReactNod
   const toggleFavorite = useCallback((sym: string) => {
     const u = sym.trim().toUpperCase();
     if (!u) return;
-    setFavorites(() => {
-      /** Never branch from `prev`: before LS merge it is only hardcoded and would wipe extras on save. */
-      const next = new Set(loadFavoriteTickers());
-      if (next.has(u)) {
-        if (isHardcodedFavorite(u)) return next;
-        next.delete(u);
-      } else {
-        next.add(u);
-      }
-      saveFavoriteTickers(next);
-      return loadFavoriteTickers();
-    });
+    /** Do not persist inside `setFavorites` — React Strict Mode may run that updater twice in dev, which would apply the toggle twice and wipe or revert favorites. */
+    const next = new Set(loadFavoriteTickers());
+    if (next.has(u)) {
+      if (isHardcodedFavorite(u)) return;
+      next.delete(u);
+    } else {
+      next.add(u);
+    }
+    saveFavoriteTickers(next);
+    setFavorites(loadFavoriteTickers());
   }, []);
 
   useEffect(() => {

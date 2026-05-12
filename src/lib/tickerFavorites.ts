@@ -26,11 +26,19 @@ export function loadFavoriteTickers(): Set<string> {
   return new Set([...hard, ...extra]);
 }
 
+function normTicker(s: string): string {
+  return s.trim().toUpperCase();
+}
+
 /** Persist only symbols that are not hardcoded (hardcoded list lives in source). */
 export function saveFavoriteTickers(symbols: Iterable<string>) {
   if (typeof window === 'undefined') return;
   const hard = hardcodedFavoriteTickerSet();
-  const extra = [...symbols].filter(s => !hard.has(s));
+  const extra = [
+    ...new Set(
+      [...symbols].map(normTicker).filter(s => s.length > 0 && !hard.has(s)),
+    ),
+  ];
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(extra));
   } catch {
